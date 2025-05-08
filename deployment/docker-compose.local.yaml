@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.local
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../config/.env.local
+    volumes:
+      - ..:/app
+    restart: unless-stopped
