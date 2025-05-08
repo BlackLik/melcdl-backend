@@ -2,13 +2,9 @@ services:
   app:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.local
+      dockerfile: docker/Dockerfile.prod
     ports:
       - "8000:8000"
     env_file:
       - ../config/.env.local
-    volumes:
-      - ../cli:/app/cli
-      - ../internal:/app/internal
-      - ../tests:/app/tests
     restart: unless-stopped

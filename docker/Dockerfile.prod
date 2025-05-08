@@ -7,7 +7,7 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project --no-cache
+RUN uv sync --frozen --no-install-project --no-dev --no-cache
 
 FROM python:3.13-slim-bookworm
 WORKDIR /app
@@ -18,4 +18,4 @@ COPY --from=builder --chown=app:app /app .
 
 COPY . .
 
-CMD ["python", "-m", "cli.app"]
+CMD ["./scripts/start.sh"]
