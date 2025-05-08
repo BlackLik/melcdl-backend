@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115.12",
+    "httpx>=0.28.1",
     "pydantic>=2.11.4",
     "pydantic-settings>=2.9.1",
     "uvicorn>=0.34.2",
@@ -14,6 +15,8 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "pytest-benchmark>=5.1.0",
     "pytest-mock>=3.14.0",
     "ruff>=0.11.8",
 ]
@@ -98,3 +101,7 @@ docstring-code-line-length = "dynamic"
 
 [tool.ruff.lint.per-file-ignores]
 "**/migrations/*" = ["ALL"]
+"**/test_*.py" = ["S101", "ARG002"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
