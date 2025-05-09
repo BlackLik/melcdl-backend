@@ -13,3 +13,24 @@ services:
       - ../tests:/app/tests
       - ../log:/app/log
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - ../data/postgresql_data:/var/lib/postgresql/data
+    env_file:
+      - ../config/.env.local
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgresql_data:
