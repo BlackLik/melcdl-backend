@@ -11,4 +11,5 @@ services:
       - ../cli:/app/cli
       - ../internal:/app/internal
       - ../tests:/app/tests
+      - ../log:/app/log
     restart: unless-stopped

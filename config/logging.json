@@ -1,1 +1,39 @@
-{}
+{
+  "version": 1,
+  "formatters": {
+    "simple": {
+      "format": "%(asctime)s | %(name)s | %(levelname)s | %(pathname)s:%(lineno)d | %(message)s"
+    },
+    "json_prettier": {
+      "format": "{\"asctime\":\"%(asctime)s\",\"name\":\"%(name)s\",\"levelname\":\"%(levelname)s\",\"pathname\":\"%(pathname)s\",\"lineno\":%(lineno)d,\"message\":\"%(message)s\"}"
+    }
+  },
+  "handlers": {
+    "file": {
+      "class": "logging.handlers.TimedRotatingFileHandler",
+      "when": "midnight",
+      "interval": 1,
+      "backupCount": 7,
+      "filename": "./log/app.log",
+      "formatter": "json_prettier",
+      "level": "DEBUG"
+    },
+    "stream": {
+      "class": "logging.StreamHandler",
+      "level": "DEBUG",
+      "formatter": "simple"
+    }
+  },
+  "root": {
+    "level": "INFO",
+    "handlers": ["file", "stream"]
+  },
+  "app": {
+    "level": "DEBUG",
+    "handlers": ["file", "stream"]
+  },
+  "uvicorn.access": {
+    "level": "INFO",
+    "handlers": ["file", "stream"]
+  }
+}

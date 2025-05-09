@@ -18,4 +18,8 @@ COPY --from=builder --chown=app:app /app .
 
 COPY . .
 
+EXPOSE 8000
+
+ENTRYPOINT []
+
 CMD ["./scripts/start.sh"]

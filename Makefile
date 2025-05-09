@@ -7,7 +7,7 @@ DOCKER := docker-compose -f $(COMPOSE_FILE)
 
 .PHONY: lint
 lint:
-	ruff check --fix
+	ruff check --fix --unsafe-fixes
 	ruff format
 
 .PHONY: run
@@ -24,6 +24,7 @@ up:
 .PHONY: clean
 clean:
 	docker builder prune -f
+	docker image prune -f
 
 .PHONY: test
 test:
