@@ -7,8 +7,8 @@ class AppSettings(BaseSettings):
     HOST: str = "0.0.0.0"  # noqa: S104
     PORT: int = 8000
 
-    APP_WORKER: int | None = None
-    APP_RELOADED: bool = True
+    APP_WORKERS: int | None = None
+    APP_RELOAD: bool = True
 
 
 @lru_cache(maxsize=1)

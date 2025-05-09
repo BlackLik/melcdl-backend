@@ -22,10 +22,11 @@ class AppCommand(AbstractCommand):
         settings = config.get_config()
 
         return uvicorn.run(
-            app=self.get_app(),
+            app="internal.bootstrap.app:_app",
             host=settings.HOST,
             port=settings.PORT,
-            reload=False,
+            reload=settings.APP_RELOAD,
+            workers=settings.APP_WORKERS,
         )
 
     def get_app(self) -> FastAPI:
@@ -33,3 +34,6 @@ class AppCommand(AbstractCommand):
         app.include_router(api.router)
 
         return app
+
+
+_app = AppCommand().get_app()
