@@ -1,2 +1,2 @@
 #!/bin/bash
-pytest --benchmark-only
+pytest --benchmark-enable --benchmark-only
