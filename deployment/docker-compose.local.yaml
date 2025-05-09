@@ -12,6 +12,7 @@ services:
       - ../internal:/app/internal
       - ../tests:/app/tests
       - ../log:/app/log
+      - ../migrations:/app/migrations
     restart: unless-stopped
     depends_on:
       db:

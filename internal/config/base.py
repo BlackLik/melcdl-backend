@@ -29,9 +29,11 @@ class AppSettings(BaseSettings):
     POSTGRES_HOST: str
     POSTGRES_PORT: str
     POSTGRES_DB: str
-    POSTGRES_URL: str
+    DATABASE_URL: str
 
-    @field_validator("POSTGRES_URL")
+    CRYPTO_KEY: str
+
+    @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def validate_postgres_url(cls, value: str | None = None, values: dict[str, Any] | None = None) -> str:
         if value:
