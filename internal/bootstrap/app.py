@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 import uvicorn
 from fastapi import FastAPI
@@ -16,6 +16,14 @@ logger = log.get_logger()
 
 
 class AppCommand(AbstractCommand):
+    _instance: Self | None = None
+
+    def __new__(cls) -> Self:
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+
+        return cls._instance
+
     def __init__(self) -> None:
         self.settings: AppSettings = config.get_config()
         self._app: FastAPI | None = None

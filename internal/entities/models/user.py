@@ -9,4 +9,5 @@ class UserModel(UUIDModel, SoftModel):
     __tablename__ = "user"
 
     email = Column(String(length=get_max_length_str_fernet(256)), nullable=False, index=True)
+    hash_email = Column(String(length=get_max_length_str_sha512()), nullable=False, index=True)
     password = Column(String(length=get_max_length_str_sha512()), nullable=False, index=True)

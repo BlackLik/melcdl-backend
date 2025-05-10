@@ -33,3 +33,9 @@ test:
 .PHONY: benchmark
 benchmark:
 	${DOCKER} run app ./scripts/benchmark.sh
+
+COMMIT ?= migrate
+
+.PHONY: migrate-create
+migrate-create:
+	${DOCKER} run app python -m cli.migrate revision -m "${COMMIT}"
