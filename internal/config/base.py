@@ -30,6 +30,7 @@ class AppSettings(BaseSettings):
     POSTGRES_PORT: str
     POSTGRES_DB: str
     DATABASE_URL: str
+    TEST_DATABASE_URL: str = ""
 
     CRYPTO_KEY: str
 

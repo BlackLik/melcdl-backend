@@ -13,6 +13,8 @@ services:
       - ../tests:/app/tests
       - ../log:/app/log
       - ../migrations:/app/migrations
+      - ../pyproject.toml:/app/pyproject.toml
+      - ../scripts:/app/scripts
     restart: unless-stopped
     depends_on:
       db:

@@ -1,3 +1,2 @@
 #!/bin/bash
-python -m cli.migrate upgrade
-pytest --benchmark-skip -n auto
+pytest --benchmark-skip -s -q -n auto

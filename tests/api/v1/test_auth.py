@@ -15,7 +15,8 @@ class TestAuth:
         async def login() -> httpx.Response:
             return await async_client.post("/api/v1/auth/login")
 
-        response = await benchmark(login)
+        benchmark.group = "request_auth_login_success"
+        response = await benchmark.pedantic(login)
         assert response.status_code == status.HTTP_200_OK
 
     async def test_logout_success(self, async_client: httpx.AsyncClient) -> None:
@@ -29,5 +30,6 @@ class TestAuth:
         async def logout() -> httpx.Response:
             return await async_client.post("/api/v1/auth/logout")
 
-        response = await benchmark(logout)
+        benchmark.group = "request_auth_logout_success"
+        response = await benchmark.pedantic(logout)
         assert response.status_code == status.HTTP_200_OK

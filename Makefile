@@ -27,11 +27,11 @@ clean:
 	docker image prune -f
 
 .PHONY: test
-test:
+test: clean-container
 	${DOCKER} run app ./scripts/test.sh
 
 .PHONY: benchmark
-benchmark:
+benchmark: clean-container
 	${DOCKER} run app ./scripts/benchmark.sh
 
 COMMIT ?= migrate
@@ -39,3 +39,7 @@ COMMIT ?= migrate
 .PHONY: migrate-create
 migrate-create:
 	${DOCKER} run app python -m cli.migrate revision -m "${COMMIT}"
+
+.PHONY: clean-container
+clean-container:
+	docker container prune -f
