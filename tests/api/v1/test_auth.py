@@ -61,7 +61,7 @@ class TestAuth:
 
             return await async_client.post("/api/v1/auth/register/", json=create_user.model_dump())
 
-        benchmark.group = "create_new_user_success"
+        benchmark.group = "create_new_user"
         response = await benchmark(create_user)
         assert response.status_code == status.HTTP_201_CREATED
 
@@ -95,6 +95,37 @@ class TestAuth:
             )
             return await async_client.post("/api/v1/auth/login/", json=data.model_dump(mode="json"))
 
-        benchmark.group = "login_user_success"
+        benchmark.group = "login_user"
         response = await benchmark(login)
         assert response.status_code == status.HTTP_200_OK
+
+    async def test_login_user_unsuccess(
+        self,
+        fake: Faker,
+        async_client: httpx.AsyncClient,
+        mock_user: dict[str, Any],
+    ) -> None:
+        data = schemas.user.LoginSchema(
+            login=mock_user["login"],
+            password=fake.password(6),
+        )
+        response = await async_client.post("/api/v1/auth/login/", json=data.model_dump(mode="json"))
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    async def test_benchmark_login_user_unsuccess(
+        self,
+        fake: Faker,
+        benchmark: BenchmarkFixture,
+        async_client: httpx.AsyncClient,
+        mock_user: dict[str, Any],
+    ) -> None:
+        async def login() -> httpx.Response:
+            data = schemas.user.LoginSchema(
+                login=mock_user["login"],
+                password=fake.password(6),
+            )
+            return await async_client.post("/api/v1/auth/login/", json=data.model_dump(mode="json"))
+
+        benchmark.group = "login_user"
+        response = await benchmark(login)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
