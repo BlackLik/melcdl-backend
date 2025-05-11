@@ -156,3 +156,55 @@ class TestAuth:
         benchmark.group = "refresh_user"
         response = await benchmark(refresh)
         assert response.status_code == status.HTTP_200_OK
+
+    async def test_verify_refresh_user_success(
+        self,
+        async_client: httpx.AsyncClient,
+        mock_user: dict[str, Any],
+    ) -> None:
+        data = schemas.user.TokenResponseSchema(token=mock_user["refresh"])
+        response = await async_client.post("/api/v1/auth/verify/", json=data.model_dump())
+        assert response.status_code == status.HTTP_200_OK
+        result = response.json()
+        assert "access" in result
+        assert UserService.verify_jwt(result["access"])
+
+    async def test_benchmark_verify_refresh_user_success(
+        self,
+        benchmark: BenchmarkFixture,
+        async_client: httpx.AsyncClient,
+        mock_user: dict[str, Any],
+    ) -> None:
+        async def refresh() -> httpx.Response:
+            data = schemas.user.TokenResponseSchema(token=mock_user["refresh"])
+            return await async_client.post("/api/v1/auth/verify/", json=data.model_dump())
+
+        benchmark.group = "verify_user"
+        response = await benchmark(refresh)
+        assert response.status_code == status.HTTP_200_OK
+
+    async def test_verify_access_user_success(
+        self,
+        async_client: httpx.AsyncClient,
+        mock_user: dict[str, Any],
+    ) -> None:
+        data = schemas.user.TokenResponseSchema(token=mock_user["access"])
+        response = await async_client.post("/api/v1/auth/verify/", json=data.model_dump())
+        assert response.status_code == status.HTTP_200_OK
+        result = response.json()
+        assert "verify" in result
+        assert result["verify"]
+
+    async def test_benchmark_verify_access_user_success(
+        self,
+        benchmark: BenchmarkFixture,
+        async_client: httpx.AsyncClient,
+        mock_user: dict[str, Any],
+    ) -> None:
+        async def verify() -> httpx.Response:
+            data = schemas.user.TokenResponseSchema(token=mock_user["access"])
+            return await async_client.post("/api/v1/auth/verify/", json=data.model_dump())
+
+        benchmark.group = "verify_user"
+        response = await benchmark(verify)
+        assert response.status_code == status.HTTP_200_OK
