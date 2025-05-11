@@ -8,7 +8,7 @@ from internal.config.models import get_db
 from internal.entities import schemas
 from internal.services.user import UserService
 
-router = APIRouter(prefix="/auth")
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register/")
