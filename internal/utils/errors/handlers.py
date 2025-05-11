@@ -1,5 +1,4 @@
 from collections.abc import Awaitable, Callable
-from types import CoroutineType
 from typing import Any
 
 from fastapi import Request, Response
@@ -7,7 +6,7 @@ from fastapi import Request, Response
 from . import BaseError, types
 
 
-def _exception_handler(err: type[BaseError]) -> Callable[..., CoroutineType[Any, Any, Response]]:
+def _exception_handler(err: type[BaseError]) -> Callable[[Request, Any], Awaitable[Response]]:
     async def wrapper(_: Request, _: Exception) -> Response:
         raise err
 
