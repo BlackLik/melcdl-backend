@@ -13,7 +13,9 @@ from sqlalchemy.orm import sessionmaker
 
 from internal import config
 from internal.bootstrap.app import AppCommand
-from internal.entities.models import BaseModel
+from internal.entities import models
+from internal.services.crypto import CryptoService
+from internal.utils.crypto import hash_string
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -34,8 +36,8 @@ async def engine(session_mocker: Mock) -> AsyncEngine:
 
     engine = create_async_engine(settings.TEST_DATABASE_URL, echo=False, future=True)
     async with engine.begin() as conn:
-        await conn.run_sync(BaseModel.metadata.drop_all)
-        await conn.run_sync(BaseModel.metadata.create_all)
+        await conn.run_sync(models.BaseModel.metadata.drop_all)
+        await conn.run_sync(models.BaseModel.metadata.create_all)
     return engine
 
 
@@ -69,16 +71,40 @@ async def clean_tables(engine: AsyncEngine) -> AsyncGenerator[None, Any]:
     """
     async with engine.begin() as conn:
         # Пройдём по всем таблицам в порядке удаления зависимых FK
-        for table in reversed(BaseModel.metadata.sorted_tables):
+        for table in reversed(models.BaseModel.metadata.sorted_tables):
             await conn.execute(delete(table))
 
     yield
 
     async with engine.begin() as conn:
-        for table in reversed(BaseModel.metadata.sorted_tables):
+        for table in reversed(models.BaseModel.metadata.sorted_tables):
             await conn.execute(delete(table))
 
 
 @pytest.fixture
 def fake() -> Faker:
     return Faker("ru_RU")
+
+
+@pytest_asyncio.fixture(scope="function")
+async def mock_user(fake: Faker, db_session: AsyncSession) -> AsyncGenerator[dict[str, Any], Any]:
+    password = fake.password(6)
+    login = fake.user_name()
+    user = models.UserModel(
+        login=CryptoService.encrypt(login).decode(),
+        hash_login=hash_string(login),
+        password=hash_string(password),
+        is_confirm=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    db_session.refresh(user)
+
+    yield {
+        "login": login,
+        "password": password,
+        "id": str(user.id),
+    }
+
+    await db_session.execute(delete(models.UserModel))
+    await db_session.commit()

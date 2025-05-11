@@ -15,6 +15,11 @@ class UserSchema(BaseModel):
 
 class CreateUserSchema(BaseModel):
     login: fields.LoginField
-    password: str
-    password_repeated: str
+    password: fields.PasswordField
+    password_repeated: fields.PasswordField
     is_confirm: bool
+
+
+class LoginSchema(BaseModel):
+    login: fields.LoginField
+    password: fields.PasswordField
