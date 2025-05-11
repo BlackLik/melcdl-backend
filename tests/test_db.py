@@ -1,12 +1,12 @@
 from datetime import datetime
 
 from faker import Faker
+from pytest_benchmark.fixture import BenchmarkFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from internal.entities.models import UserModel
 from internal.services.crypto import CryptoService
 from internal.utils import crypto
-from tests.api.v1.test_auth import BenchmarkFixture
 
 
 class TestUser:

@@ -16,6 +16,7 @@ from internal import config
 from internal.bootstrap.app import AppCommand
 from internal.entities import models
 from internal.services.crypto import CryptoService
+from internal.services.user import UserService
 from internal.utils.crypto import hash_string
 
 
@@ -110,6 +111,8 @@ async def mock_user(fake: Faker, db_session: AsyncSession) -> AsyncGenerator[dic
     yield {
         "login": login,
         "password": password,
+        "access": UserService.encode_jwt(UserService.get_access_body(user=user).model_dump(mode="json")),
+        "refresh": UserService.encode_jwt(UserService.get_refresh_body(user).model_dump(mode="json")),
         "id": str(user.id),
     }
 

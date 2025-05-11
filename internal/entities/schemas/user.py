@@ -25,6 +25,10 @@ class LoginSchema(BaseModel):
     password: fields.PasswordField
 
 
+class TokenResponseSchema(BaseModel):
+    token: str
+
+
 class RefreshTokenResponseSchema(BaseModel):
     refresh: str
 

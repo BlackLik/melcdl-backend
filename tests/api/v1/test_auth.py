@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from internal.entities import models, schemas
+from internal.services.user import UserService
 from internal.utils import log
 from internal.utils.crypto import hash_string
 
@@ -129,3 +130,15 @@ class TestAuth:
         benchmark.group = "login_user"
         response = await benchmark(login)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    async def test_refresh_user_success(
+        self,
+        async_client: httpx.AsyncClient,
+        mock_user: dict[str, Any],
+    ) -> None:
+        data = schemas.user.TokenResponseSchema(token=mock_user["refresh"])
+        response = await async_client.post("/api/v1/auth/refresh/", json=data.model_dump())
+        assert response.status_code == status.HTTP_200_OK
+        result = response.json()
+        assert "access" in result
+        assert UserService.verify_jwt(result["access"])
