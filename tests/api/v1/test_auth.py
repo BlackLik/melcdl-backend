@@ -166,8 +166,8 @@ class TestAuth:
         response = await async_client.post("/api/v1/auth/verify/", json=data.model_dump())
         assert response.status_code == status.HTTP_200_OK
         result = response.json()
-        assert "access" in result
-        assert UserService.verify_jwt(result["access"])
+        assert "verify" in result
+        assert result["verify"]
 
     async def test_benchmark_verify_refresh_user_success(
         self,
