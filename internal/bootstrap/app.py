@@ -35,7 +35,7 @@ class AppCommand(AbstractCommand):
             port=self.settings.PORT,
             reload=self.settings.APP_RELOAD,
             workers=self.settings.APP_WORKERS,
-            log_config=self._get_log_config(),
+            log_config=self.get_log_config(),
         )
 
     @property
@@ -64,7 +64,7 @@ class AppCommand(AbstractCommand):
         yield
         logger.info("Stop app")
 
-    def _get_log_config(self) -> dict[str, Any]:
+    def get_log_config(self) -> dict[str, Any]:
         if not self.settings.APP_CONFIG_LOG.exists():
             raise FileNotFoundError
 

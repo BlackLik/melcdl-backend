@@ -5,15 +5,27 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from internal.config.models import get_db
-from internal.services.user import CreateUserSchema, UserSchema, UserService
+from internal.entities import schemas
+from internal.services.user import UserService
 
 router = APIRouter(prefix="/auth")
 
 
 @router.post("/register/")
-async def create_user(data: CreateUserSchema, session: Annotated[AsyncSession, Depends(get_db)]) -> UserSchema:
+async def create_user(
+    data: schemas.user.CreateUserSchema,
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> schemas.user.UserSchema:
     result = await UserService.create_new_user(session=session, create_user=data)
     return JSONResponse(
         content=result.model_dump(mode="json"),
         status_code=status.HTTP_201_CREATED,
     )
+
+
+@router.post("/login/")
+async def login(
+    data: schemas.user.LoginSchema,
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> schemas.user.AllTokenResponseSchema:
+    return await UserService.login(data=data, session=session)

@@ -17,5 +17,4 @@ def get_exception_handlers() -> dict[int | type[Exception], Callable[[Request, A
     return {
         ValueError: _exception_handler(types.ValidationError),
         KeyError: _exception_handler(types.NotFoundError),
-        Exception: _exception_handler(types.InternalServerError),
     }

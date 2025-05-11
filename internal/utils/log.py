@@ -28,5 +28,5 @@ class LoggingLevelEnum(int, Enum):
 
 
 def set_level(dict_config: dict, level: LoggingLevelEnum) -> None:
-    for elem in ["root", _name_logger]:
-        dict_config[elem]["level"] = level.value
+    for elem in ["", _name_logger]:
+        dict_config["loggers"][elem]["level"] = level.value

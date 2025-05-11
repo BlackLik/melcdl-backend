@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
 from unittest.mock import Mock
@@ -16,6 +17,12 @@ from internal.bootstrap.app import AppCommand
 from internal.entities import models
 from internal.services.crypto import CryptoService
 from internal.utils.crypto import hash_string
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_logging() -> None:
+    logging.basicConfig(level=logging.WARNING)
+    logging.getLogger("sqlalchemy.engine.Engine").disabled = True
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -106,5 +113,5 @@ async def mock_user(fake: Faker, db_session: AsyncSession) -> AsyncGenerator[dic
         "id": str(user.id),
     }
 
-    await db_session.execute(delete(models.UserModel))
+    db_session.delete(user)
     await db_session.commit()

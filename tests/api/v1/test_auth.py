@@ -8,7 +8,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from internal.entities import models, schemas
+from internal.utils import log
 from internal.utils.crypto import hash_string
+
+logger = log.get_logger()
 
 
 class TestAuth:
@@ -19,7 +22,7 @@ class TestAuth:
         db_session: AsyncSession,
     ) -> None:
         password = fake.password(length=6)
-        create_user = schemas.CreateUserSchema(
+        create_user = schemas.user.CreateUserSchema(
             login=fake.user_name(),
             password=password,
             password_repeated=password,
@@ -49,7 +52,7 @@ class TestAuth:
     ) -> None:
         async def create_user() -> httpx.Response:
             password = fake.password(length=6)
-            create_user = schemas.CreateUserSchema(
+            create_user = schemas.user.CreateUserSchema(
                 login=fake.user_name(),
                 password=password,
                 password_repeated=password,
@@ -67,14 +70,31 @@ class TestAuth:
         async_client: httpx.AsyncClient,
         mock_user: dict[str, Any],
     ) -> None:
-        data = schemas.LoginSchema(
+        data = schemas.user.LoginSchema(
             login=mock_user["login"],
             password=mock_user["password"],
         )
-        response = await async_client.post("/api/v1/auth/login/", json=data.model_dump())
+        response = await async_client.post("/api/v1/auth/login/", json=data.model_dump(mode="json"))
         assert response.status_code == status.HTTP_200_OK
 
         result = response.json()
 
         assert "access" in result
         assert "refresh" in result
+
+    async def test_benchmark_login_user_success(
+        self,
+        benchmark: BenchmarkFixture,
+        async_client: httpx.AsyncClient,
+        mock_user: dict[str, Any],
+    ) -> None:
+        async def login() -> httpx.Response:
+            data = schemas.user.LoginSchema(
+                login=mock_user["login"],
+                password=mock_user["password"],
+            )
+            return await async_client.post("/api/v1/auth/login/", json=data.model_dump(mode="json"))
+
+        benchmark.group = "login_user_success"
+        response = await benchmark(login)
+        assert response.status_code == status.HTTP_200_OK

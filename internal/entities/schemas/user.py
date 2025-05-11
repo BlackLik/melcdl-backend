@@ -23,3 +23,32 @@ class CreateUserSchema(BaseModel):
 class LoginSchema(BaseModel):
     login: fields.LoginField
     password: fields.PasswordField
+
+
+class RefreshTokenResponseSchema(BaseModel):
+    refresh: str
+
+
+class AccessTokenResponseSchema(BaseModel):
+    access: str
+
+
+class AllTokenResponseSchema(RefreshTokenResponseSchema, AccessTokenResponseSchema):
+    pass
+
+
+class BaseTokenSchema(BaseModel):
+    iat: int
+    exp: int
+    sub: str
+    login: fields.LoginField
+
+
+class RefreshTokenSchema(BaseTokenSchema):
+    pass
+
+
+class AccessTokenSchema(BaseTokenSchema):
+    created_on: datetime
+    updated_on: datetime
+    is_confirm: bool

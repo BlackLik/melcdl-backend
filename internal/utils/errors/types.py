@@ -21,7 +21,8 @@ class BaseError(HTTPException):
         )
 
 
-class InternalServerError(HTTPException): ...
+class InternalServerError(HTTPException):
+    pass
 
 
 class UniqueError(BaseError):

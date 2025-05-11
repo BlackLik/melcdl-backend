@@ -1,7 +1,5 @@
-from .user import CreateUserSchema, LoginSchema, UserSchema
+from . import user
 
 __all__ = [
-    "CreateUserSchema",
-    "LoginSchema",
-    "UserSchema",
+    "user",
 ]

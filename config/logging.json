@@ -24,20 +24,40 @@
       "formatter": "simple"
     }
   },
+  "loggers": {
+    "": {
+      "level": "DEBUG",
+      "handlers": ["file", "stream"],
+      "propagate": false
+    },
+    "app": {
+      "level": "DEBUG",
+      "handlers": ["file", "stream"],
+      "propagate": false
+    },
+    "uvicorn.access": {
+      "level": "INFO",
+      "handlers": ["file", "stream"],
+      "propagate": false
+    },
+    "sqlalchemy": {
+      "level": "ERROR",
+      "handlers": ["file", "stream"],
+      "propagate": false
+    },
+    "sqlalchemy.engine": {
+      "level": "ERROR",
+      "handlers": ["file", "stream"],
+      "propagate": false
+    },
+    "sqlalchemy.engine.Engine": {
+      "level": "ERROR",
+      "handlers": ["file", "stream"],
+      "propagate": false
+    }
+  },
   "root": {
-    "level": "INFO",
-    "handlers": ["file", "stream"]
-  },
-  "app": {
     "level": "DEBUG",
-    "handlers": ["file", "stream"]
-  },
-  "uvicorn.access": {
-    "level": "INFO",
-    "handlers": ["file", "stream"]
-  },
-  "sqlalchemy": {
-    "level": "ERROR",
     "handlers": ["file", "stream"]
   }
 }
