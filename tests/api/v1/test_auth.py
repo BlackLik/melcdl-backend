@@ -142,3 +142,17 @@ class TestAuth:
         result = response.json()
         assert "access" in result
         assert UserService.verify_jwt(result["access"])
+
+    async def test_benchmark_refresh_user_success(
+        self,
+        benchmark: BenchmarkFixture,
+        async_client: httpx.AsyncClient,
+        mock_user: dict[str, Any],
+    ) -> None:
+        async def refresh() -> httpx.Response:
+            data = schemas.user.TokenResponseSchema(token=mock_user["refresh"])
+            return await async_client.post("/api/v1/auth/refresh/", json=data.model_dump())
+
+        benchmark.group = "refresh_user"
+        response = await benchmark(refresh)
+        assert response.status_code == status.HTTP_200_OK
