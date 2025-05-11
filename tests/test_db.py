@@ -31,8 +31,8 @@ class TestUser:
         await db_session.refresh(user)
 
         assert user.id is not None, "UUID должен быть сгенерирован"
-        assert user.email == test_email
-        assert user.hash_email == test_hash
+        assert user.login == test_email
+        assert user.hash_login == test_hash
         assert user.password == test_password
 
         assert hasattr(user, "created_on"), "SoftModel: должен быть created_at"

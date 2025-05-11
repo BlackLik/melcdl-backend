@@ -37,8 +37,12 @@ benchmark: clean-container
 COMMIT ?= migrate
 
 .PHONY: migrate-create
-migrate-create:
+migrate-create: clean-container
 	${DOCKER} run app python -m cli.migrate revision -m "${COMMIT}"
+
+.PHONY: migrate-upgrade
+migrate-upgrade: clean-container
+	${DOCKER} run app python -m cli.migrate upgrade head
 
 .PHONY: clean-container
 clean-container:

@@ -1,13 +1,13 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, Self
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 
 from internal import api, config
 from internal.bootstrap.abc import AbstractCommand
-from internal.utils import log
+from internal.utils import errors, log
 
 if TYPE_CHECKING:
     from internal.config.base import AppSettings
@@ -48,10 +48,14 @@ class AppCommand(AbstractCommand):
     def _init_app(self) -> FastAPI:
         app = FastAPI(
             lifespan=self._lifespan,
+            exception_handlers=self._exception_handlers(),
         )
         app.include_router(api.router)
 
         return app
+
+    def _exception_handlers(self) -> dict[int | type[Exception], Callable[[Request, Any], Awaitable[Response]]]:
+        return errors.get_exception_handlers()
 
     @staticmethod
     @asynccontextmanager
