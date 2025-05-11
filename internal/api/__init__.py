@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from internal.utils.routers import include_router
 
-from . import v1
+from . import common, v1
 
 router = APIRouter(prefix="/api")
-include_router(include_router=router, models=[v1])
+include_router(include_router=router, models=[v1, common])
