@@ -4,6 +4,7 @@ from .types import (
     ForbiddenError,
     NotFoundError,
     UnauthorizedError,
+    UniqueError,
     ValidationError,
 )
 
@@ -12,6 +13,7 @@ __all__ = [
     "ForbiddenError",
     "NotFoundError",
     "UnauthorizedError",
+    "UniqueError",
     "ValidationError",
     "get_exception_handlers",
 ]
