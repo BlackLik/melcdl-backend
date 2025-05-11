@@ -37,6 +37,10 @@ class AccessTokenResponseSchema(BaseModel):
     access: str
 
 
+class VerifyResponseSchema(BaseModel):
+    verify: bool
+
+
 class AllTokenResponseSchema(RefreshTokenResponseSchema, AccessTokenResponseSchema):
     pass
 

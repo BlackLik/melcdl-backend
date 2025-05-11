@@ -37,3 +37,11 @@ async def refresh_user(
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> schemas.user.AccessTokenResponseSchema:
     return await UserService.refresh(data=data, session=session)
+
+
+@router.post("/verify/")
+async def verify_user_token(
+    data: schemas.user.TokenResponseSchema,
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> schemas.user.VerifyResponseSchema:
+    return await UserService.verify(data=data, session=session)

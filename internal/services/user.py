@@ -137,3 +137,21 @@ class UserService:
         return schemas.user.AccessTokenResponseSchema(
             access=cls.encode_jwt(cls.get_access_body(user).model_dump(mode="json")),
         )
+
+    @classmethod
+    async def verify(
+        cls,
+        data: schemas.user.TokenResponseSchema,
+        session: AsyncSession,
+    ) -> schemas.user.VerifyResponseSchema:
+        user_repo = UserRepository(session=session)
+        if not cls.verify_jwt(data.token):
+            return schemas.user.VerifyResponseSchema(verify=False)
+
+        base_token = schemas.user.BaseTokenSchema.model_validate(cls.decode_jwt(data.token))
+
+        user = await user_repo.filter(id=base_token.sub)
+        if not user:
+            return schemas.user.VerifyResponseSchema(verify=False)
+
+        return schemas.user.VerifyResponseSchema(verify=True)
