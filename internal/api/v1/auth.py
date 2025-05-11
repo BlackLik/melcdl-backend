@@ -1,13 +1,19 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from internal.config.models import get_db
+from internal.services.user import CreateUserSchema, UserSchema, UserService
 
 router = APIRouter(prefix="/auth")
 
 
-@router.post("/login")
-def login() -> dict[str, str]:
-    return {"message": "Login successful"}
-
-
-@router.post("/logout")
-def logout() -> dict[str, str]:
-    return {"message": "Logout successful"}
+@router.post("/register/")
+async def create_user(data: CreateUserSchema, session: Annotated[AsyncSession, Depends(get_db)]) -> UserSchema:
+    result = await UserService.create_new_user(session=session, create_user=data)
+    return JSONResponse(
+        content=result.model_dump(mode="json"),
+        status_code=status.HTTP_201_CREATED,
+    )

@@ -7,8 +7,8 @@ from . import types
 
 
 def _exception_handler(err: type[types.BaseError]) -> Callable[[Request, Any], Awaitable[Response]]:
-    async def wrapper(request: Request, exc: Exception) -> Response:  # noqa: ARG001
-        raise err
+    async def wrapper(_: Request, exc: Exception) -> Response:
+        raise err(status_code=None, detail=str(exc))
 
     return wrapper
 

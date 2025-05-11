@@ -11,7 +11,7 @@ from . import get_config
 @lru_cache(maxsize=1)
 def get_engine() -> AsyncEngine:
     return create_async_engine(
-        url=get_config().POSTGRES_URL,
+        url=get_config().DATABASE_URL,
         echo=True,
         future=True,
     )

@@ -35,5 +35,9 @@
   "uvicorn.access": {
     "level": "INFO",
     "handlers": ["file", "stream"]
+  },
+  "sqlalchemy": {
+    "level": "ERROR",
+    "handlers": ["file", "stream"]
   }
 }

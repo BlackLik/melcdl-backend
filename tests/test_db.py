@@ -16,22 +16,23 @@ class TestUser:
         Проверяем, что атрибуты сохраняются и генерируется UUID.
         """
 
-        test_email = fake.email()
-        test_hash = crypto.hash_string(test_email)
-        test_email = CryptoService.encrypt(test_email).decode()
+        test_login = fake.user_name()
+        test_hash = crypto.hash_string(test_login)
+        test_login = CryptoService.encrypt(test_login).decode()
         test_password = crypto.hash_string(fake.password(256))
 
         user = UserModel(
-            email=test_email,
-            hash_email=test_hash,
+            login=test_login,
+            hash_login=test_hash,
             password=test_password,
+            is_confirm=True,
         )
         db_session.add(user)
         await db_session.commit()
         await db_session.refresh(user)
 
         assert user.id is not None, "UUID должен быть сгенерирован"
-        assert user.login == test_email
+        assert user.login == test_login
         assert user.hash_login == test_hash
         assert user.password == test_password
 
@@ -46,15 +47,16 @@ class TestUser:
         db_session: AsyncSession,
     ) -> None:
         async def create_user() -> UserModel:
-            test_email = fake.email()
-            test_hash = crypto.hash_string(test_email)
-            test_email = CryptoService.encrypt(test_email).decode()
+            test_login = fake.user_name()
+            test_hash = crypto.hash_string(test_login)
+            test_login = CryptoService.encrypt(test_login).decode()
             test_password = crypto.hash_string(fake.password(256))
 
             user = UserModel(
-                email=test_email,
-                hash_email=test_hash,
+                login=test_login,
+                hash_login=test_hash,
                 password=test_password,
+                is_confirm=True,
             )
             db_session.add(user)
             await db_session.commit()
@@ -62,5 +64,5 @@ class TestUser:
             return user
 
         benchmark.group = "database_user_model_insert"
-        user = await benchmark.pedantic(create_user)
+        user = await benchmark(create_user)
         assert user.id is not None, "UUID должен быть сгенерирован"

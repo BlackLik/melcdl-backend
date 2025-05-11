@@ -3,4 +3,4 @@ from internal.repositories.base import BaseRepository
 
 
 class UserRepository(BaseRepository[UserModel]):
-    pass
+    _default_model = UserModel

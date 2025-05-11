@@ -1,6 +1,7 @@
 import asyncio
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
+from unittest.mock import Mock
 
 import httpx
 import pytest
@@ -23,11 +24,15 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, Any]:
 
 
 @pytest_asyncio.fixture(scope="session")
-async def engine() -> AsyncEngine:
+async def engine(session_mocker: Mock) -> AsyncEngine:
     """
     Инициализируем async-движок и сбрасываем/создаём схему перед сессией.
     """
-    engine = create_async_engine(config.get_config().TEST_DATABASE_URL, echo=False, future=True)
+    settings = config.get_config()
+    settings.DATABASE_URL = settings.TEST_DATABASE_URL
+    session_mocker.patch("internal.config.get_config", return_value=settings)
+
+    engine = create_async_engine(settings.TEST_DATABASE_URL, echo=False, future=True)
     async with engine.begin() as conn:
         await conn.run_sync(BaseModel.metadata.drop_all)
         await conn.run_sync(BaseModel.metadata.create_all)

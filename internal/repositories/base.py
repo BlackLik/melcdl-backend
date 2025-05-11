@@ -1,18 +1,20 @@
-from typing import Any, Generic, Self
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 
-class BaseRepository[T](Generic[T]):
+class BaseRepository[T]:
     """
     Базовый CRUD-репозиторий для асинхронных моделей SQLAlchemy.
     Предполагается, что сессия передается извне и commit/rollback управляется на уровне сервиса или middleware.
     """
 
-    def __init__(self, session: AsyncSession, model: type[T]) -> None:
+    _default_model: type[T]
+
+    def __init__(self, session: AsyncSession, model: type[T] | None = None) -> None:
         self.session: AsyncSession = session
-        self.model: type[T] = model
+        self.model = model or self._default_model
 
     async def get(self, pk: Any) -> T | None:  # noqa: ANN401
         """Получить объект по primary key"""
@@ -50,7 +52,3 @@ class BaseRepository[T](Generic[T]):
         """Удалить объект из базы"""
         await self.session.delete(obj)
         await self.session.flush()
-
-    @classmethod
-    def get_repository(cls, session: AsyncSession) -> Self:
-        return cls(session=session, model=T)
