@@ -29,3 +29,11 @@ async def login(
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> schemas.user.AllTokenResponseSchema:
     return await UserService.login(data=data, session=session)
+
+
+@router.post("/refresh/")
+async def refresh_user(
+    data: schemas.user.TokenResponseSchema,
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> schemas.user.AccessTokenResponseSchema:
+    return await UserService.refresh(data=data, session=session)

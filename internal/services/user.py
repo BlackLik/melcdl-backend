@@ -113,10 +113,27 @@ class UserService:
 
         user = await user_repo.filter(hash_login=login_hash, deleted_on=sa.null(), password=password_hash)
         if user is None:
-            logger.error("Not found user")
             raise errors.UnauthorizedError(detail=None)
 
         return schemas.user.AllTokenResponseSchema(
             access=cls.encode_jwt(cls.get_access_body(user).model_dump(mode="json")),
             refresh=cls.encode_jwt(cls.get_refresh_body(user).model_dump(mode="json")),
+        )
+
+    @classmethod
+    async def refresh(
+        cls,
+        data: schemas.user.TokenResponseSchema,
+        session: AsyncSession,
+    ) -> schemas.user.AccessTokenResponseSchema:
+        user_repo = UserRepository(session=session)
+
+        refresh_token = schemas.user.RefreshTokenSchema.model_validate(cls.decode_jwt(data.token))
+
+        user = await user_repo.filter(id=refresh_token.sub)
+        if not user:
+            raise errors.UnauthorizedError(detail=None)
+
+        return schemas.user.AccessTokenResponseSchema(
+            access=cls.encode_jwt(cls.get_access_body(user).model_dump(mode="json")),
         )
