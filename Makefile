@@ -22,7 +22,7 @@ up:
 	${DOCKER} up --force-recreate -d
 
 .PHONY: clean
-clean:
+clean: clean-container
 	docker builder prune -f
 	docker image prune -f
 

@@ -3,11 +3,11 @@ from typing import Any
 
 from fastapi import Request, Response
 
-from . import BaseError, types
+from . import types
 
 
-def _exception_handler(err: type[BaseError]) -> Callable[[Request, Any], Awaitable[Response]]:
-    async def wrapper(_: Request, _: Exception) -> Response:
+def _exception_handler(err: type[types.BaseError]) -> Callable[[Request, Any], Awaitable[Response]]:
+    async def wrapper(request: Request, exc: Exception) -> Response:  # noqa: ARG001
         raise err
 
     return wrapper
