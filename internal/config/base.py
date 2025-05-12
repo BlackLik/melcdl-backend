@@ -41,6 +41,10 @@ class AppSettings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_SECRET_KEY: str
 
+    S3_URL: str
+    S3_ACCESS_KEY: str
+    S3_SECRET_KEY: str
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def validate_postgres_url(cls, value: str | None = None, values: dict[str, Any] | None = None) -> str:
