@@ -26,7 +26,7 @@ def setup_logging() -> None:
     logging.getLogger("sqlalchemy.engine.Engine").disabled = True
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
 def event_loop() -> Generator[asyncio.AbstractEventLoop, Any]:
     loop = asyncio.get_event_loop()
     yield loop
@@ -63,7 +63,7 @@ async def db_session(engine: AsyncEngine) -> AsyncGenerator[AsyncSession, Any]:
         yield session
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture(scope="package", loop_scope="session")
 async def async_client() -> AsyncGenerator[httpx.AsyncClient, Any]:
     transport = httpx.ASGITransport(app=AppCommand().fastapi_app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -96,7 +96,7 @@ def fake() -> Faker:
 
 @pytest_asyncio.fixture(scope="function")
 async def mock_user(fake: Faker, db_session: AsyncSession) -> AsyncGenerator[dict[str, Any], Any]:
-    password = fake.password(6)
+    password = fake.password(12)
     login = fake.user_name()
     user = models.UserModel(
         login=CryptoService.encrypt(login).decode(),
