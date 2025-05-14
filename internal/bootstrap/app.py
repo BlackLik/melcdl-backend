@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, Self
@@ -7,6 +8,7 @@ from fastapi import FastAPI, Request, Response
 
 from internal import api, config
 from internal.bootstrap.abc import AbstractCommand
+from internal.config.kafka import get_kafka_consumer
 from internal.utils import errors, log
 
 if TYPE_CHECKING:
@@ -27,6 +29,7 @@ class AppCommand(AbstractCommand):
     def __init__(self) -> None:
         self.settings: AppSettings = config.get_config()
         self._app: FastAPI | None = None
+        self.background_tasks = set()
 
     def execute(self) -> None:
         uvicorn.run(
@@ -57,11 +60,18 @@ class AppCommand(AbstractCommand):
     def _exception_handlers(self) -> dict[int | type[Exception], Callable[[Request, Any], Awaitable[Response]]]:
         return errors.get_exception_handlers()
 
-    @staticmethod
     @asynccontextmanager
-    async def _lifespan(_: FastAPI) -> AsyncGenerator[None, Any]:
+    async def _lifespan(self, _: FastAPI) -> AsyncGenerator[None, Any]:
         logger.info("Start app")
+        tasks_start = [get_kafka_consumer().start]
+
+        for elem in tasks_start:
+            task = asyncio.create_task(elem())
+            self.background_tasks.add(task)
+            task.add_done_callback(self.background_tasks.discard)
+
         yield
+
         logger.info("Stop app")
 
     def get_log_config(self) -> dict[str, Any]:

@@ -14,6 +14,9 @@ class StandEnum(str, Enum):
 
 
 class AppSettings(BaseSettings):
+    APP_NAME: str = "melcdl-backend"
+    APP_VERSION: str = "0.1.0"
+
     HOST: str = "0.0.0.0"  # noqa: S104
     PORT: int = 8000
 
@@ -44,6 +47,10 @@ class AppSettings(BaseSettings):
     S3_URL: str
     S3_ACCESS_KEY: str
     S3_SECRET_KEY: str
+
+    # kafka
+    KAFKA_BOOTSTRAP_SERVERS: str
+    KAFKA_GROUP_ID: str = APP_NAME
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
