@@ -1,7 +1,9 @@
 from datetime import timedelta
+from functools import lru_cache
 from typing import Any
 
 import jose
+import pydantic
 import sqlalchemy as sa
 from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +13,7 @@ from internal.entities import models, schemas
 from internal.repositories.user import UserRepository
 from internal.services.utime import TimeService
 from internal.utils import errors, log
+from internal.utils.auth import HTTPBearerAuth, HTTPBearerAuthConfig
 from internal.utils.crypto import hash_string
 from internal.utils.errors import UnauthorizedError, UniqueError, ValidationError
 from tests.test_db import CryptoService
@@ -155,3 +158,20 @@ class UserService:
             return schemas.user.VerifyResponseSchema(verify=False)
 
         return schemas.user.VerifyResponseSchema(verify=True)
+
+    @classmethod
+    @lru_cache(maxsize=1)
+    def get_bearer_auth(cls) -> HTTPBearerAuth:
+        return HTTPBearerAuth(config=HTTPBearerAuthConfig(check_token=cls.check_token_access))
+
+    @classmethod
+    def check_token_access(cls, token: str) -> bool:
+        if not cls.verify_jwt(token):
+            return False
+
+        try:
+            schemas.user.AccessTokenSchema.model_validate(cls.decode_jwt(token))
+        except pydantic.ValidationError:
+            return False
+
+        return True
