@@ -1,8 +1,8 @@
 from collections.abc import AsyncGenerator
 from functools import lru_cache
-from typing import Any
 
 import aioboto3
+from aiobotocore.client import AioBaseClient
 
 from .base import get_config
 
@@ -16,7 +16,7 @@ def get_s3_session() -> aioboto3.Session:
     )
 
 
-async def get_s3_client() -> AsyncGenerator[Any, Any]:
+async def get_s3_client() -> AsyncGenerator[AioBaseClient]:
     settings = get_config()
     session = get_s3_session()
     async with session.client("s3", endpoint_url=settings.S3_URL) as client:
