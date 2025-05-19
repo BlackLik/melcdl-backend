@@ -1,0 +1,79 @@
+@startuml to_be
+
+left to right direction
+title ER диаграмма
+
+package pk_users {
+    object "Users" as users {
+        * id: uuid <<PK>>
+        --
+        create_at: datetime
+        update_at: datetime
+        delete_at: datetime null
+        login: string
+        hash_login: string
+        password: string
+    }
+}
+
+package pk_melcdl {
+    object "Files" as files {
+        * id: uuid <<PK>>
+        --
+        create_at: datetime
+        update_at: datetime
+        delete_at: datetime null
+        original_name: string
+        s3_path: string
+        type_file: string
+        user_id: uuid <<FK>>
+    }
+
+
+    object "Models" as models {
+        * id: int <<PK>>
+        --
+        create_at: datetime
+        update_at: datetime
+        delete_at: datetime null
+        name: string
+        s3_path: string
+    }
+
+    object "Predicts" as predicts {
+        * id: uuid <<PK>>
+        --
+        file_id: uuid <<FK>>
+        model_id: int <<FK>>
+        result: int
+        prob: float
+    }
+
+
+    enum "StatusTaskEnum" as status_task {
+        "UPLOAD"
+        "ERROR"
+        "SUCCESS"
+        "PREDICT"
+    }
+
+    object "Tasks" as tasks {
+        * id: uuid <<PK>>
+        --
+        status: StatusTaskEnum
+        message: string
+        predict_id: uuid <<FK>>
+        file_id: uuid <<FK>>
+        user_id: uuid <<FK>>
+    }
+}
+
+tasks::status --> status_task
+tasks::file_id }o--|| files::id
+tasks::predict_id }o--|| predicts::id
+tasks::user_id }o--|| users::id
+files::user_id }o--|| users::id
+predicts::file_id }o--|| files::id
+predicts::model_id }o--|| models::id
+
+@enduml
