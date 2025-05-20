@@ -48,3 +48,8 @@ class UnauthorizedError(BaseError):
 class ValidationError(BaseError):
     _default_detail = "Validation Error"
     _default_status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+class BadRequestError(BaseError):
+    _default_detail = "Bad Request"
+    _default_status_code = status.HTTP_400_BAD_REQUEST

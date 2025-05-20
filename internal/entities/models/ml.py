@@ -36,5 +36,5 @@ class Tasks(UUIDModel, SoftModel):
     file_id = Column(ForeignKey("files.id"))
     user_id = Column(ForeignKey("user.id"))
     predict_id = Column(ForeignKey("predicts.id"))
-    message = Column(String(), nullable=True)
+    message = Column(String(), nullable=False, default="")
     status = Column(String(256), nullable=False)

@@ -47,10 +47,14 @@ class AppSettings(BaseSettings):
     S3_URL: str
     S3_ACCESS_KEY: str
     S3_SECRET_KEY: str
+    S3_BUCKET_NAME_FILE: str = "data"
+    S3_BUCKET_NAME_MODEL: str = "model"
 
     # kafka
     KAFKA_BOOTSTRAP_SERVERS: str
     KAFKA_GROUP_ID: str = APP_NAME
+
+    TTL_CACHE: int = 300
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

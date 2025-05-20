@@ -23,7 +23,6 @@ up:
 
 .PHONY: clean
 clean: clean-container
-	docker builder prune -f
 	docker image prune -f
 
 .PHONY: test

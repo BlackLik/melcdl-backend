@@ -10,9 +10,9 @@ logger = log.get_logger()
 
 
 class KafkaActions:
-    def __init__(self, prefix: str | None) -> None:
+    def __init__(self, prefix: str = "") -> None:
         self.prefix = prefix or ""
-        self.handler: dict[str, Callable[[aiokafka.ConsumerRecord], Awaitable[None]]] = {}
+        self.handlers: dict[str, Callable[[aiokafka.ConsumerRecord], Awaitable[None]]] = {}
 
     def read(self, topic_prefix: str) -> Callable[[Callable[[aiokafka.ConsumerRecord], Awaitable[None]]], None]:
         def handler(
@@ -28,7 +28,7 @@ class KafkaActions:
         return handler
 
     def include_action(self, kafka_action: Self) -> None:
-        self.handler = {self.prefix + key: value for key, value in kafka_action.handler}
+        self.handlers = {self.prefix + key: value for key, value in kafka_action.handlers.items()}
 
     def get_handler(self, topic: str) -> Callable[[aiokafka.ConsumerRecord], Awaitable[None]]:
         handler = self.handlers.get(topic)
@@ -39,7 +39,7 @@ class KafkaActions:
         return handler
 
     def get_topics(self) -> list[str]:
-        return list(self.handler.keys())
+        return list(self.handlers.keys())
 
 
 class KafkaConsumerConfig(BaseModel):
@@ -61,7 +61,6 @@ class KafkaConsumerConfig(BaseModel):
     auto_commit_interval_ms: int = 5000
     check_crcs: bool = True
     metadata_max_age_ms: int = 5 * 60 * 1000
-    partition_assignment_strategy: Any = (aiokafka.RoundRobinPartitionAssignor,)
     max_poll_interval_ms: int = 300000
     rebalance_timeout_ms: Any | None = None
     session_timeout_ms: int = 10000

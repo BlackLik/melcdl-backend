@@ -100,6 +100,10 @@ class UserService:
         return cls._decode_jwt_jose(token)
 
     @classmethod
+    def decode_jwt_access_payload(cls, token: str) -> schemas.user.AccessTokenSchema:
+        return schemas.user.AccessTokenSchema.model_validate(cls.decode_jwt(token=token))
+
+    @classmethod
     def verify_jwt(cls, token: str) -> bool:
         try:
             cls._decode_jwt_jose(token)

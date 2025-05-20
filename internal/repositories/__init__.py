@@ -1,4 +1,4 @@
-from . import user
+from . import ml, user
 from .base import BaseRepository
 
-__all__ = ["BaseRepository", "user"]
+__all__ = ["BaseRepository", "ml", "user"]

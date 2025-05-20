@@ -54,6 +54,26 @@
       "level": "ERROR",
       "handlers": ["file", "stream"],
       "propagate": false
+    },
+    "python_multipart.multipart": {
+      "level": "ERROR",
+      "handlers": ["file", "stream"],
+      "propagate": false
+    },
+    "aiokafka": {
+      "level": "ERROR",
+      "handlers": ["file", "stream"],
+      "propagate": false
+    },
+    "botocore": {
+      "level": "ERROR",
+      "handlers": ["file", "stream"],
+      "propagate": false
+    },
+    "aiobotocore.regions": {
+      "level": "ERROR",
+      "handlers": ["file", "stream"],
+      "propagate": false
     }
   },
   "root": {

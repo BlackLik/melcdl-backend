@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, Self
@@ -62,6 +63,7 @@ class AppCommand(AbstractCommand):
 
     @asynccontextmanager
     async def _lifespan(self, _: FastAPI) -> AsyncGenerator[None, Any]:
+        logging.getLogger("sqlalchemy.engine.Engine").disabled = True
         logger.info("Start app")
         tasks_start = [get_kafka_consumer().start]
 
