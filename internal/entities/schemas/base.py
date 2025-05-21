@@ -1,7 +1,10 @@
 from datetime import datetime
 from enum import Enum
+from typing import Generic, TypeVar
 
 from pydantic import UUID4, BaseModel
+
+T = TypeVar("T")
 
 
 class MessageSchema(BaseModel):
@@ -28,3 +31,11 @@ class BaseEnum(str, Enum):
     @staticmethod
     def _generate_next_value_(name: str, start: str, count: int, last_values: str) -> str:  # noqa: ARG004
         return name
+
+
+class BasePaginatorSchema(BaseModel, Generic[T]):
+    data: list[T]
+    total_count: int
+    total_pages: int
+    batch_size: int
+    current_page: int

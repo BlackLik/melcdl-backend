@@ -77,7 +77,7 @@ class TestMLTasks:
             user_id=mock_user["id"],
         )
         db_session.add(file)
-        await self.session.flush()
+        await db_session.flush()
         task = models.Tasks(
             file_id=file.id,
             user_id=mock_user["id"],

@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,5 +32,13 @@ async def upload_image(
 async def get_list_tasks(
     token: Annotated[str, Depends(UserService.get_bearer_auth())],
     session: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
-    return {}
+    batch_size: Annotated[int, Query(gt=0, le=20000)] = 100,
+    current_page: Annotated[int, Query(gt=0)] = 1,
+) -> schemas.base.BasePaginatorSchema[schemas.ml.TaskItemSchema]:
+    payload = UserService.decode_jwt_access_payload(token=token)
+    return await MLService.get_list_tasks(
+        user_id=payload.sub,
+        session=session,
+        batch_size=batch_size,
+        current_page=current_page,
+    )

@@ -1,5 +1,6 @@
 from typing import Any
 
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -15,6 +16,11 @@ class BaseRepository[T]:
     def __init__(self, session: AsyncSession, model: type[T] | None = None) -> None:
         self.session: AsyncSession = session
         self.model = model or self._default_model
+
+    async def count(self, **params: dict[str, Any]) -> int:
+        qs = select(func.count()).select_from(self.model).filter_by(**(params or {}))
+        result = await self.session.execute(qs)
+        return result.scalar_one()
 
     async def get(self, pk: Any) -> T | None:  # noqa: ANN401
         """Получить объект по primary key"""

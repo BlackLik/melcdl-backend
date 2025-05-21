@@ -1,3 +1,4 @@
+import math
 import uuid
 
 from async_lru import alru_cache
@@ -78,4 +79,38 @@ class MLService:
             status=task.status,
             created_on=task.created_on,
             updated_on=task.updated_on,
+        )
+
+    @classmethod
+    async def get_list_tasks(
+        cls,
+        user_id: UUID4,
+        session: AsyncSession,
+        batch_size: int,
+        current_page: int,
+    ) -> schemas.base.BasePaginatorSchema[schemas.ml.TaskItemSchema]:
+        task_repo = TasksRepository(session=session)
+        params = {"user_id": user_id}
+
+        result = await task_repo.list(limit=batch_size, offset=batch_size * (current_page - 1), **params)
+
+        total_count = await task_repo.count(**params)
+
+        total_pages = math.ceil(total_count / batch_size)
+
+        return schemas.base.BasePaginatorSchema[schemas.ml.TaskItemSchema](
+            data=[
+                schemas.ml.TaskItemSchema(
+                    id=elem.id,
+                    created_on=elem.created_on,
+                    updated_on=elem.updated_on,
+                    status=elem.status,
+                    message=elem.message,
+                )
+                for elem in result
+            ],
+            total_count=total_count,
+            total_pages=total_pages,
+            current_page=current_page,
+            batch_size=batch_size,
         )

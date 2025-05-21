@@ -13,3 +13,8 @@ class StatusEnum(base.BaseEnum):
 class TaskCreateResponseSchema(base.UUIDMixinSchema, base.CreatedMixinSchema, base.UpdatedMixinSchema):
     status: StatusEnum
     message: str = ""
+
+
+class TaskItemSchema(base.UpdatedMixinSchema, base.CreatedMixinSchema, base.UUIDMixinSchema):
+    status: StatusEnum
+    message: str = ""
