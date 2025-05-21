@@ -1,7 +1,8 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Path, Query, UploadFile, status
 from fastapi.responses import JSONResponse
+from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from internal.api.v1.auth import get_db
@@ -42,3 +43,12 @@ async def get_list_tasks(
         batch_size=batch_size,
         current_page=current_page,
     )
+
+
+@router.get("/tasks/{pk}/")
+async def get_single_task(
+    token: Annotated[str, Depends(UserService.get_bearer_auth())],
+    session: Annotated[AsyncSession, Depends(get_db)],
+    pk: Annotated[UUID4, Path()],
+) -> dict:
+    return {}
