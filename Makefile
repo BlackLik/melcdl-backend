@@ -22,27 +22,24 @@ up:
 	${DOCKER} up --force-recreate -d
 
 .PHONY: clean
-clean: clean-container
+clean:
+	docker container prune -f
 	docker image prune -f
 
 .PHONY: test
-test: clean-container
+test: clean
 	${DOCKER} run app ./scripts/test.sh
 
 .PHONY: benchmark
-benchmark: clean-container
+benchmark: clean
 	${DOCKER} run app ./scripts/benchmark.sh
 
 COMMIT ?= migrate
 
 .PHONY: migrate-create
-migrate-create: clean-container
+migrate-create: clean
 	${DOCKER} run app python -m cli.migrate revision -m "${COMMIT}"
 
 .PHONY: migrate-upgrade
-migrate-upgrade: clean-container
+migrate-upgrade: clean
 	${DOCKER} run app python -m cli.migrate upgrade head
-
-.PHONY: clean-container
-clean-container:
-	docker container prune -f
