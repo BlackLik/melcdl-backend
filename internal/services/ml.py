@@ -12,7 +12,7 @@ from internal.config.s3 import get_s3_session
 from internal.entities import schemas
 from internal.repositories.ml import FilesRepository, TasksRepository
 from internal.services.crypto import CryptoService
-from internal.utils import log
+from internal.utils import errors, log
 from internal.utils.errors.types import BadRequestError, InternalServerError
 
 logger = log.get_logger()
@@ -113,4 +113,31 @@ class MLService:
             total_pages=total_pages,
             current_page=current_page,
             batch_size=batch_size,
+        )
+
+    @classmethod
+    async def get_single_task(cls, user_id: UUID4, session: AsyncSession, pk: UUID4) -> schemas.ml.TaskResponseSchema:
+        task_repo, file_repo = TasksRepository(session=session), FilesRepository(session=session)
+
+        task = await task_repo.filter(id=pk, user_id=user_id)
+        if not task:
+            raise errors.NotFoundError(detail=None)
+
+        file = await file_repo.get(pk=task.file_id)
+
+        return schemas.ml.TaskResponseSchema(
+            id=task.id,
+            created_on=task.created_on,
+            updated_on=task.updated_on,
+            status=task.status,
+            message=task.message,
+            file=schemas.ml.FileSchema(
+                id=file.id,
+                created_on=file.created_on,
+                updated_on=file.updated_on,
+                original_name=CryptoService.decrypt(file.original_name),
+                url=get_config().S3_URL + "/" + file.s3_path,
+            )
+            if file
+            else None,
         )

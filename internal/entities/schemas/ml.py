@@ -1,5 +1,7 @@
 from enum import auto
 
+from pydantic import HttpUrl
+
 from . import base
 
 
@@ -18,3 +20,14 @@ class TaskCreateResponseSchema(base.UUIDMixinSchema, base.CreatedMixinSchema, ba
 class TaskItemSchema(base.UpdatedMixinSchema, base.CreatedMixinSchema, base.UUIDMixinSchema):
     status: StatusEnum
     message: str = ""
+
+
+class FileSchema(base.UpdatedMixinSchema, base.CreatedMixinSchema, base.UUIDMixinSchema):
+    url: HttpUrl
+    original_name: str
+
+
+class TaskResponseSchema(base.UpdatedMixinSchema, base.CreatedMixinSchema, base.UUIDMixinSchema):
+    status: StatusEnum
+    message: str = ""
+    file: FileSchema | None = None

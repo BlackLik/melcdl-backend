@@ -12,34 +12,37 @@ logger = log.get_logger()
 class KafkaActions:
     def __init__(self, prefix: str = "") -> None:
         self.prefix = prefix or ""
-        self.handlers: dict[str, Callable[[aiokafka.ConsumerRecord], Awaitable[None]]] = {}
+        self.handlers: list[tuple[str, Callable[[aiokafka.ConsumerRecord], Awaitable[None]]]] = []
+        self.dict_handlers: dict[str, Callable[[aiokafka.ConsumerRecord], Awaitable[None]]] = {}
 
     def read(self, topic_prefix: str) -> Callable[[Callable[[aiokafka.ConsumerRecord], Awaitable[None]]], None]:
-        def handler(
+        def wrapper(
             func: Callable[[aiokafka.ConsumerRecord], Awaitable[Any]],
-        ) -> Callable[[aiokafka.ConsumerRecord], Awaitable[Any]]:
-            async def wrapper(msg: aiokafka.ConsumerRecord) -> Any:  # noqa: ANN401
-                return await func(msg)
+        ) -> None:
+            self.handlers.append((self.prefix + topic_prefix, func))
+            self.dict_handlers.clear()
 
-            self.handlers[f"{self.prefix}{topic_prefix}"] = wrapper
-
-            return wrapper
-
-        return handler
+        return wrapper
 
     def include_action(self, kafka_action: Self) -> None:
-        self.handlers = {self.prefix + key: value for key, value in kafka_action.handlers.items()}
+        self.handlers.extend((self.prefix + name, func) for name, func in kafka_action.handlers)
 
     def get_handler(self, topic: str) -> Callable[[aiokafka.ConsumerRecord], Awaitable[None]]:
-        handler = self.handlers.get(topic)
+        handler = self.get_handlers().get(topic, None)
         if not handler:
             detail = f"Not found handler to topic: {topic!s}"
             raise errors.NotFoundError(detail=detail)
 
         return handler
 
+    def get_handlers(self) -> dict[str, Callable[[aiokafka.ConsumerRecord], Awaitable[Any]]]:
+        if not self.dict_handlers:
+            self.dict_handlers = dict(self.handlers)
+        return self.dict_handlers
+
     def get_topics(self) -> list[str]:
-        return list(self.handlers.keys())
+        logger.info("%s", list(self.get_handlers().keys()))
+        return list(self.get_handlers().keys())
 
 
 class KafkaConsumerConfig(BaseModel):
@@ -88,7 +91,8 @@ class KafkaConsumer(KafkaActions):
 
     async def start(self) -> None:
         self.consumer = aiokafka.consumer.AIOKafkaConsumer(
-            *self.get_topics(), **self.kafka_config.model_dump(mode="python")
+            *self.get_topics(),
+            **self.kafka_config.model_dump(mode="python"),
         )
         await self.consumer.start()
         await self.run()

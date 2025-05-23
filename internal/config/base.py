@@ -14,7 +14,7 @@ class StandEnum(str, Enum):
 
 
 class AppSettings(BaseSettings):
-    APP_NAME: str = "melcdl-backend"
+    APP_NAME: str = "melcdl_backend"
     APP_VERSION: str = "0.1.0"
 
     HOST: str = "0.0.0.0"  # noqa: S104

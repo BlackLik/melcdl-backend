@@ -56,6 +56,9 @@ class AppCommand(AbstractCommand):
         )
         app.include_router(api.router)
 
+        self.consumer = get_kafka_consumer()
+        self.consumer.include_action(api.kafka.actions)
+
         return app
 
     def _exception_handlers(self) -> dict[int | type[Exception], Callable[[Request, Any], Awaitable[Response]]]:
@@ -65,7 +68,7 @@ class AppCommand(AbstractCommand):
     async def _lifespan(self, _: FastAPI) -> AsyncGenerator[None, Any]:
         logging.getLogger("sqlalchemy.engine.Engine").disabled = True
         logger.info("Start app")
-        tasks_start = [get_kafka_consumer().start]
+        tasks_start = [self.consumer.start]
 
         for elem in tasks_start:
             task = asyncio.create_task(elem())

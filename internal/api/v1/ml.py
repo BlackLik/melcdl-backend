@@ -50,5 +50,6 @@ async def get_single_task(
     token: Annotated[str, Depends(UserService.get_bearer_auth())],
     session: Annotated[AsyncSession, Depends(get_db)],
     pk: Annotated[UUID4, Path()],
-) -> dict:
-    return {}
+) -> schemas.ml.TaskResponseSchema:
+    payload = UserService.decode_jwt_access_payload(token=token)
+    return await MLService.get_single_task(user_id=payload.sub, session=session, pk=pk)
