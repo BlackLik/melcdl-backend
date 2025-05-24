@@ -10,7 +10,7 @@ from fastapi import FastAPI, Request, Response
 from internal import api, config
 from internal.bootstrap.abc import AbstractCommand
 from internal.config.kafka import get_kafka_consumer
-from internal.services.ml import MLService
+from internal.services.ml.base import MLService
 from internal.utils import errors, log
 
 if TYPE_CHECKING:

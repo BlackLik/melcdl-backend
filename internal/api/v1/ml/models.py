@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from internal.config.models import get_db
 from internal.entities import schemas
-from internal.services.ml import MLService
+from internal.services.ml.base import MLService
 
 router = APIRouter(prefix="/models", tags=["Models"])
 

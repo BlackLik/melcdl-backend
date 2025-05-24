@@ -9,7 +9,7 @@ from internal.api.v1.auth import get_db
 from internal.client.kafka.producer import KafkaProducer
 from internal.config.kafka import get_kafka_producer_context
 from internal.entities import schemas
-from internal.services.ml import MLService
+from internal.services.ml.base import MLService
 from internal.services.user import UserService
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])

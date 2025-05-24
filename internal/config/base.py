@@ -4,6 +4,7 @@ from multiprocessing import cpu_count
 from pathlib import Path
 from typing import Any
 
+import torch
 from pydantic import ValidationError, field_validator
 from pydantic_settings import BaseSettings
 
@@ -59,6 +60,8 @@ class AppSettings(BaseSettings):
 
     ML_DIR_TO_UPLOAD: Path = "./data/ml"
     ML_DEFAULT_NAME_TO_UPLOAD: list[dict[str, str]] = []
+
+    ML_DEVICE: str = "cuda" if torch.cuda.is_available() else "cpu"
 
     DEFAULT_BATCH_SIZE: int = 1000
 
