@@ -6,30 +6,40 @@ from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from internal.api.v1.auth import get_db
+from internal.client.kafka.producer import KafkaProducer
+from internal.config.kafka import get_kafka_producer_context
 from internal.entities import schemas
 from internal.services.ml import MLService
 from internal.services.user import UserService
 
-router = APIRouter(prefix="/ml", tags=["ML"])
+router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
-@router.post("/tasks/")
+@router.put("/{model_pk}/")
 async def upload_image(
     token: Annotated[str, Depends(UserService.get_bearer_auth())],
     file: Annotated[UploadFile, File(...)],
     session: Annotated[AsyncSession, Depends(get_db)],
+    model_pk: Annotated[UUID4, Path()],
+    producer: Annotated[KafkaProducer, Depends(get_kafka_producer_context)],
 ) -> schemas.ml.TaskCreateResponseSchema | dict[str, Any]:
     payload = UserService.decode_jwt_access_payload(token=token)
 
-    result = await MLService.upload_img(user_id=payload.sub, file=file, session=session)
+    result = await MLService.upload_img(
+        user_id=payload.sub,
+        file=file,
+        session=session,
+        model_pk=model_pk,
+        producer=producer,
+    )
 
     return JSONResponse(
-        content=result,
+        content=result.model_dump(mode="json"),
         status_code=status.HTTP_201_CREATED,
     )
 
 
-@router.get("/tasks/")
+@router.get("/")
 async def get_list_tasks(
     token: Annotated[str, Depends(UserService.get_bearer_auth())],
     session: Annotated[AsyncSession, Depends(get_db)],
@@ -45,7 +55,7 @@ async def get_list_tasks(
     )
 
 
-@router.get("/tasks/{pk}/")
+@router.get("/{pk}/")
 async def get_single_task(
     token: Annotated[str, Depends(UserService.get_bearer_auth())],
     session: Annotated[AsyncSession, Depends(get_db)],

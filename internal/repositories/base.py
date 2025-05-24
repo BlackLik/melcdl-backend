@@ -4,6 +4,8 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from internal.config import get_config
+
 
 class BaseRepository[T]:
     """
@@ -32,7 +34,12 @@ class BaseRepository[T]:
         result = await self.session.execute(qs)
         return result.scalar_one_or_none()
 
-    async def list(self, offset: int = 0, limit: int = 1000, **params: dict[str, Any]) -> list[T]:
+    async def list(
+        self,
+        offset: int = 0,
+        limit: int = get_config().DEFAULT_BATCH_SIZE,
+        **params: dict[str, Any],
+    ) -> list[T]:
         """Получить список объектов по пагинации"""
         q = select(self.model).filter_by(**(params or {})).offset(offset).limit(limit)
         result = await self.session.execute(q)
@@ -45,6 +52,14 @@ class BaseRepository[T]:
         # flush позволяет получить сгенерированные БД поля (id и т.д.)
         await self.session.flush()
         return obj
+
+    async def get_or_create(self, filters: dict[str, Any], params_to_create: dict[str, Any]) -> tuple[T, bool]:
+        """Получить или создать объект"""
+        obj = await self.filter(**filters)
+        if not obj:
+            return await self.create(**params_to_create), True
+
+        return obj, False
 
     async def update(self, obj: T, obj_in: dict[str, Any]) -> T:
         """Обновить поля объекта и добавить изменения в сессию"""

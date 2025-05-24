@@ -53,8 +53,14 @@ class AppSettings(BaseSettings):
     # kafka
     KAFKA_BOOTSTRAP_SERVERS: str
     KAFKA_GROUP_ID: str = APP_NAME
+    KAFKA_TOPIC_MELANOMA_ML: str = "melanoma-detection"
 
-    TTL_CACHE: int = 300
+    CACHE_TTL: int = 300
+
+    ML_DIR_TO_UPLOAD: Path = "./data/ml"
+    ML_DEFAULT_NAME_TO_UPLOAD: list[dict[str, str]] = []
+
+    DEFAULT_BATCH_SIZE: int = 1000
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

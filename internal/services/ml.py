@@ -7,21 +7,22 @@ from fastapi import UploadFile, status
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from internal.client.kafka.producer import KafkaProducer
 from internal.config import get_config
+from internal.config.models import get_async_session
 from internal.config.s3 import get_s3_session
 from internal.entities import schemas
-from internal.repositories.ml import FilesRepository, TasksRepository
+from internal.repositories.ml import FilesRepository, ModelsRepository, TasksRepository
 from internal.services.crypto import CryptoService
 from internal.utils import errors, log
-from internal.utils.errors.types import BadRequestError, InternalServerError
 
 logger = log.get_logger()
 
 
 class MLService:
     @staticmethod
-    @alru_cache(maxsize=2, ttl=get_config().TTL_CACHE)
-    async def check_bucket_exists(bucket_name: str) -> bool:
+    @alru_cache(maxsize=2, ttl=get_config().CACHE_TTL)
+    async def check_bucket_exists(bucket_name: str) -> None:
         session = get_s3_session()
 
         async with session.client("s3", endpoint_url=get_config().S3_URL) as s3:
@@ -36,22 +37,27 @@ class MLService:
 
                 await s3.create_bucket(Bucket=bucket_name)
 
-        return True
-
     @classmethod
     async def upload_img(
         cls,
         user_id: UUID4,
         file: UploadFile,
         session: AsyncSession,
+        model_pk: UUID4,
+        producer: KafkaProducer,
     ) -> schemas.ml.TaskCreateResponseSchema:
         if not file.content_type.startswith("image/"):
-            raise BadRequestError(detail="INCORRECT_FILE_TYPE")
+            raise errors.BadRequestError(detail="INCORRECT_FILE_TYPE")
 
         settings = get_config()
 
-        if not await cls.check_bucket_exists(settings.S3_BUCKET_NAME_FILE):
-            raise InternalServerError(detail="ERROR S3")
+        await cls.check_bucket_exists(settings.S3_BUCKET_NAME_FILE)
+
+        model_repo = ModelsRepository(session=session)
+
+        model = await model_repo.get(pk=model_pk)
+        if not model:
+            raise errors.NotFoundError(detail="Not found model")
 
         file_repo, task_repo = FilesRepository(session=session), TasksRepository(session=session)
 
@@ -72,7 +78,13 @@ class MLService:
             type_file=file.content_type,
         )
         task = await task_repo.create(file_id=file.id, status=schemas.ml.StatusEnum.UPLOAD)
+
         await session.commit()
+
+        await producer.send(
+            settings.KAFKA_TOPIC_MELANOMA_ML,
+            schemas.ml.KafkaInputMessageSchema(task_id=task.id, model_id=model.id).model_dump_json(),
+        )
 
         return schemas.ml.TaskCreateResponseSchema(
             id=task.id,
@@ -141,3 +153,125 @@ class MLService:
             if file
             else None,
         )
+
+    @classmethod
+    async def upload_model_default_to_bucket(cls) -> None:
+        logger.info("Start upload model default to bucket")
+        settings = get_config()
+
+        await cls.check_bucket_exists(settings.S3_BUCKET_NAME_MODEL)
+
+        dirs = settings.ML_DIR_TO_UPLOAD
+
+        files = [f for f in dirs.iterdir() if f.is_file() and f.name.endswith((".pt", ".pth"))]
+
+        logger.info("Find files: %s", files)
+
+        async_session_local = get_async_session()
+
+        async with (
+            get_s3_session().client("s3", endpoint_url=get_config().S3_URL) as s3,
+            async_session_local() as db_session,
+        ):
+            model_repo = ModelsRepository(session=db_session)
+            for file in files:
+                logger.info("Start upload %s to bucket", file.name)
+                default_name_list = [
+                    elem for elem in settings.ML_DEFAULT_NAME_TO_UPLOAD if elem["file_name"] == file.name
+                ]
+                default_name: dict[str, str] = default_name_list[0] if default_name_list else {}
+
+                params_to_create = {
+                    "name": default_name.get("model_name", file.stem.replace("_", " ").title()),
+                    "s3_path": f"{settings.S3_BUCKET_NAME_MODEL}/{file.name}",
+                    "is_exists": True,
+                }
+                try:
+                    await s3.head_object(Bucket=settings.S3_BUCKET_NAME_MODEL, Key=file.name)
+                    logger.info("Model %s exists in bucket.", file.name)
+
+                    await model_repo.get_or_create(
+                        filters={"s3_path": f"{settings.S3_BUCKET_NAME_MODEL}/{file.name}"},
+                        params_to_create=params_to_create,
+                    )
+
+                    await db_session.commit()
+
+                    continue
+                except ClientError as e:
+                    code = int(e.response["Error"]["Code"])
+                    if code != status.HTTP_404_NOT_FOUND:
+                        logger.exception("Error %s in S3", file.name)
+                        raise
+
+                try:
+                    logger.info("%s download to s3...", file.name)
+                    with file.open("rb") as data:
+                        await s3.upload_fileobj(data, settings.S3_BUCKET_NAME_MODEL, file.name)
+                except ClientError:
+                    logger.exception("Ошибка загрузки %s в S3", file.name)
+                    raise
+
+                await model_repo.create(**params_to_create)
+
+                await db_session.commit()
+
+        logger.info("End upload model default to bucket")
+
+    @classmethod
+    async def check_model_file_exists(cls) -> None:
+        logger.info("Start check model file exists in bucket")
+        settings = get_config()
+
+        await cls.check_bucket_exists(settings.S3_BUCKET_NAME_MODEL)
+
+        async_session_local = get_async_session()
+
+        async with (
+            get_s3_session().client("s3", endpoint_url=get_config().S3_URL) as s3,
+            async_session_local() as db_session,
+        ):
+            model_repo = ModelsRepository(session=db_session)
+
+            count_model = await model_repo.count()
+            batch_size = settings.DEFAULT_BATCH_SIZE
+            dir_ml = settings.ML_DIR_TO_UPLOAD
+
+            for index in range(0, count_model, settings.DEFAULT_BATCH_SIZE):
+                models = await model_repo.list(offset=index, limit=batch_size)
+                for model in models:
+                    bucket, key = model.s3_path.rsplit("/", 1)
+                    try:
+                        await s3.head_object(Bucket=bucket, Key=key)
+                        local_file = dir_ml / key
+
+                        if not local_file.exists():
+                            with local_file.open("wb") as f:
+                                await s3.download_fileobj(Bucket=bucket, Key=key, Fileobj=f)
+
+                        logger.info("Downloaded %s to %s", key, local_file.absolute())
+
+                        await model_repo.update(model, {"is_exists": True})
+                    except ClientError as e:
+                        code = int(e.response["Error"]["Code"])
+                        if code != status.HTTP_404_NOT_FOUND:
+                            raise
+                        await model_repo.update(model, {"is_exists": False})
+
+                    await db_session.commit()
+
+        logger.info("End check model file exists in bucket")
+
+    @classmethod
+    async def start_all_jobs(cls) -> None:
+        await cls.upload_model_default_to_bucket()
+        await cls.check_model_file_exists()
+
+    @classmethod
+    async def get_models(cls, session: AsyncSession) -> list[schemas.ml.ModelSchema]:
+        model_repo = ModelsRepository(session=session)
+        return [
+            schemas.ml.ModelSchema(id=elem.id, name=elem.name)
+            for index in range(0, await model_repo.count(), get_config().DEFAULT_BATCH_SIZE)
+            for elem in await model_repo.list(offset=index, limit=get_config().DEFAULT_BATCH_SIZE)
+        ]

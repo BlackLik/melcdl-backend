@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request, Response
 from internal import api, config
 from internal.bootstrap.abc import AbstractCommand
 from internal.config.kafka import get_kafka_consumer
+from internal.services.ml import MLService
 from internal.utils import errors, log
 
 if TYPE_CHECKING:
@@ -68,6 +69,7 @@ class AppCommand(AbstractCommand):
     async def _lifespan(self, _: FastAPI) -> AsyncGenerator[None, Any]:
         logging.getLogger("sqlalchemy.engine.Engine").disabled = True
         logger.info("Start app")
+        await MLService.start_all_jobs()
         tasks_start = [self.consumer.start]
 
         for elem in tasks_start:

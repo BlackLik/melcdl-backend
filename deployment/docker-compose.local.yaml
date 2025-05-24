@@ -15,6 +15,7 @@ services:
       - ../migrations:/app/migrations
       - ../pyproject.toml:/app/pyproject.toml
       - ../scripts:/app/scripts
+      - ../data/ml:/app/data/ml
     restart: unless-stopped
     depends_on:
       db:

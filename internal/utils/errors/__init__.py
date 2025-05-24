@@ -1,7 +1,9 @@
 from .handlers import get_exception_handlers
 from .types import (
+    BadRequestError,
     BaseError,
     ForbiddenError,
+    InternalServerError,
     NotFoundError,
     UnauthorizedError,
     UniqueError,
@@ -9,8 +11,10 @@ from .types import (
 )
 
 __all__ = [
+    "BadRequestError",
     "BaseError",
     "ForbiddenError",
+    "InternalServerError",
     "NotFoundError",
     "UnauthorizedError",
     "UniqueError",

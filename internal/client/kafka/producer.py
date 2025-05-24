@@ -57,4 +57,4 @@ class KafkaProducer:
         await self.stop()
 
     async def send(self, topic: str, message: AnyStr) -> None:
-        await self.producer.send(topic=topic, message=message if isinstance(message, bytes) else message.encode())
+        await self.producer.send(topic=topic, value=message if isinstance(message, bytes) else message.encode())

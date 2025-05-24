@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String
 
 from internal.utils.crypto import get_max_length_str_fernet
 
@@ -10,6 +10,7 @@ class Models(UUIDModel, SoftModel):
 
     name = Column(String(length=256), nullable=False)
     s3_path = Column(String(), nullable=False)
+    is_exists = Column(Boolean(), default=False, nullable=False)
 
 
 class Files(UUIDModel, SoftModel):

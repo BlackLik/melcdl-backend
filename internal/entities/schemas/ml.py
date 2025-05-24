@@ -1,6 +1,6 @@
 from enum import auto
 
-from pydantic import HttpUrl
+from pydantic import UUID4, BaseModel, HttpUrl
 
 from . import base
 
@@ -31,3 +31,12 @@ class TaskResponseSchema(base.UpdatedMixinSchema, base.CreatedMixinSchema, base.
     status: StatusEnum
     message: str = ""
     file: FileSchema | None = None
+
+
+class KafkaInputMessageSchema(BaseModel):
+    task_id: UUID4
+    model_id: UUID4
+
+
+class ModelSchema(base.UUIDMixinSchema):
+    name: str
