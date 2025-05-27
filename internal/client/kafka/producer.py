@@ -54,7 +54,7 @@ class KafkaProducer:
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> None:
-        await self.stop()
+        pass
 
     async def send(self, topic: str, message: AnyStr) -> None:
         await self.producer.send(topic=topic, value=message if isinstance(message, bytes) else message.encode())

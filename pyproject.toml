@@ -21,6 +21,7 @@ dependencies = [
     "python-multipart>=0.0.20",
     "pytz>=2025.2",
     "sqlalchemy>=2.0.40",
+    "timm>=1.0.15",
     "torch>=2.7.0",
     "torchaudio>=2.7.0",
     "torchvision>=0.22.0",

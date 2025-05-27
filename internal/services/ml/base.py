@@ -1,9 +1,13 @@
+import io
 import math
 import uuid
+from pathlib import Path
+from typing import Any
 
 from async_lru import alru_cache
 from botocore.exceptions import ClientError
 from fastapi import UploadFile, status
+from PIL import Image
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,10 +15,12 @@ from internal.client.kafka.producer import KafkaProducer
 from internal.config import get_config
 from internal.config.models import get_async_session
 from internal.config.s3 import get_s3_session
-from internal.entities import schemas
-from internal.repositories.ml import FilesRepository, ModelsRepository, TasksRepository
+from internal.entities import models, schemas
+from internal.repositories.ml import FilesRepository, ModelsRepository, PredictsRepository, TasksRepository
 from internal.services.crypto import CryptoService
+from internal.services.ml.model import PyTorchModel
 from internal.utils import errors, log
+from internal.utils.resnet_abcd_swin import ResNetCosineSwinModel
 
 logger = log.get_logger()
 
@@ -77,7 +83,7 @@ class MLService:
             s3_path=file_path,
             type_file=file.content_type,
         )
-        task = await task_repo.create(file_id=file.id, status=schemas.ml.StatusEnum.UPLOAD)
+        task = await task_repo.create(file_id=file.id, status=schemas.ml.StatusEnum.UPLOAD, user_id=user_id)
 
         await session.commit()
 
@@ -136,6 +142,13 @@ class MLService:
             raise errors.NotFoundError(detail=None)
 
         file = await file_repo.get(pk=task.file_id)
+        predict = await PredictsRepository(session=session).get(pk=task.predict_id)
+
+        map_result = {
+            schemas.ml.PredictEnum.MALIGNANT: "MALIGNANT",
+            schemas.ml.PredictEnum.BENIGN: "BENIGN",
+            schemas.ml.PredictEnum.ANOTHER: "ANOTHER",
+        }
 
         return schemas.ml.TaskResponseSchema(
             id=task.id,
@@ -152,7 +165,32 @@ class MLService:
             )
             if file
             else None,
+            predict=schemas.ml.PredictSchema(
+                id=predict.id,
+                result=map_result.get(predict.result, "ANOTHER"),
+                probability=predict.probability,
+            )
+            if predict
+            else None,
         )
+
+    @classmethod
+    async def get_internal_task(cls, session: AsyncSession, pk: UUID4) -> models.Tasks | None:
+        task_repo = TasksRepository(session=session)
+
+        return await task_repo.get(pk=pk)
+
+    @classmethod
+    async def update_internal_task(cls, session: AsyncSession, pk: UUID4, data: dict) -> models.Tasks:
+        task_repo = TasksRepository(session=session)
+
+        task = await task_repo.get(pk=pk)
+        if not task:
+            raise errors.NotFoundError(detail=None)
+
+        await task_repo.update(obj=task, obj_in=data)
+
+        await session.commit()
 
     @classmethod
     async def upload_model_default_to_bucket(cls) -> None:
@@ -277,21 +315,66 @@ class MLService:
         ]
 
     @classmethod
-    async def get_model(cls, name_file: str) -> None:
+    async def get_model(cls, name_file: str) -> PyTorchModel:
         settings = get_config()
         file = settings.ML_DIR_TO_UPLOAD / name_file
         if file.exists():
-            return
+            torch_model = PyTorchModel(model=ResNetCosineSwinModel())
+            torch_model.load_model(file.absolute())
+            return torch_model
 
         async with get_s3_session().client("s3", endpoint_url=get_config().S3_URL) as s3:
             with file.open("wb") as f:
                 await s3.download_fileobj(Bucket=settings.S3_BUCKET_NAME_MODEL, Key=name_file, Fileobj=f)
 
-        return
+        torch_model = PyTorchModel(model=ResNetCosineSwinModel())
+        torch_model.load_model(file.absolute())
+
+        return torch_model
+
+    @staticmethod
+    async def get_file(s3_path: str) -> bytes:
+        bucket, key = s3_path.rsplit("/", 1)
+        async with get_s3_session().client("s3", endpoint_url=get_config().S3_URL) as s3:
+            resp = await s3.get_object(Bucket=bucket, Key=key)
+            body = resp["Body"]
+            return await body.read()
 
     @classmethod
     async def predict_file(cls, session: AsyncSession, data: schemas.ml.KafkaInputMessageSchema) -> None:
-        ModelsRepository(session=session)
-        TasksRepository(session=session)
-        FilesRepository(session=session)
+        models_repo = ModelsRepository(session=session)
+        tasks_repo = TasksRepository(session=session)
+        files_repo = FilesRepository(session=session)
+        predicts_repo = PredictsRepository(session=session)
         logger.info("Input data to predict %s", data.model_dump_json())
+
+        task = await tasks_repo.get(pk=data.task_id)
+        if not task:
+            raise errors.NotFoundError(detail=None)
+
+        model = await models_repo.filter(id=data.model_id, is_exists=True)
+        if not model:
+            raise errors.NotFoundError(detail=None)
+
+        file = await files_repo.get(pk=task.file_id)
+        if not file:
+            raise errors.NotFoundError(detail=None)
+
+        model_class = await cls.get_model(name_file=Path(model.s3_path).name)
+
+        img = Image.open(io.BytesIO(await cls.get_file(file.s3_path))).convert("RGB")
+
+        result, probability = model_class.predict(image_input=img)
+
+        predict = await predicts_repo.create(file_id=file.id, model_id=model.id, result=result, probability=probability)
+        await session.commit()
+
+        await tasks_repo.update(task, {"status": schemas.ml.StatusEnum.SUCCESS, "predict_id": predict.id})
+        await session.commit()
+
+    @classmethod
+    async def predict_image(cls, file: UploadFile) -> dict[str, Any]:
+        model = await cls.get_model("resnet18_melanoma_with_abcd_swin.pth")
+
+        result = model.predict(image_input=Image.open(io.BytesIO(await file.read())).convert("RGB"))
+        return {"result": result}

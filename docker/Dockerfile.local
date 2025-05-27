@@ -10,12 +10,20 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-cache
 
 FROM python:3.13-slim-bookworm
+
 WORKDIR /app
 
 ENV PATH="/app/.venv/bin:${PATH}"
 
-COPY --from=builder --chown=app:app /app .
+RUN apt-get update && \
+    apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxrender1 \
+    libxext6
 
+COPY --from=builder --chown=app:app /app .
 COPY . .
 
 EXPOSE 8000

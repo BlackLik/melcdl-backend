@@ -1,4 +1,4 @@
-from enum import auto
+from enum import Enum, auto
 
 from pydantic import UUID4, BaseModel, HttpUrl
 
@@ -10,6 +10,12 @@ class StatusEnum(base.BaseEnum):
     ERROR = auto()
     PREDICT = auto()
     UPLOAD = auto()
+
+
+class PredictEnum(int, Enum):
+    BENIGN = auto()
+    MALIGNANT = auto()
+    ANOTHER = auto()
 
 
 class TaskCreateResponseSchema(base.UUIDMixinSchema, base.CreatedMixinSchema, base.UpdatedMixinSchema):
@@ -27,10 +33,16 @@ class FileSchema(base.UpdatedMixinSchema, base.CreatedMixinSchema, base.UUIDMixi
     original_name: str
 
 
+class PredictSchema(base.UUIDMixinSchema):
+    result: str
+    probability: float
+
+
 class TaskResponseSchema(base.UpdatedMixinSchema, base.CreatedMixinSchema, base.UUIDMixinSchema):
     status: StatusEnum
     message: str = ""
     file: FileSchema | None = None
+    predict: PredictSchema | None = None
 
 
 class KafkaInputMessageSchema(BaseModel):

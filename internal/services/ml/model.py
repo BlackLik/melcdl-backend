@@ -10,6 +10,9 @@ from torch import nn
 from torchvision import transforms
 
 from internal.config import get_config
+from internal.utils import log
+
+logger = log.get_logger()
 
 
 class PyTorchModel:
@@ -20,14 +23,12 @@ class PyTorchModel:
         self.model = model
 
         sig = inspect.signature(self.model.forward)
-        # parameters include 'self' + each arg -> so >= 3 means (self, x, abcd)
-        self._accepts_abcd = len(sig.parameters) >= 3  # noqa: PLR2004
+        self._accepts_abcd = len(sig.parameters) >= 2  # noqa: PLR2004
 
     @staticmethod
-    def get_transformer() -> transforms.Compose[list]:
+    def get_transformer() -> transforms.Compose:
         return transforms.Compose(
             [
-                transforms.ToPILImage(),
                 transforms.Resize((224, 224)),
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomRotation(360),

@@ -25,7 +25,7 @@ class Files(UUIDModel, SoftModel):
 class Predicts(UUIDModel):
     __tablename__ = "predicts"
 
-    file_id = Column(ForeignKey("user.id"))
+    file_id = Column(ForeignKey("files.id"))
     model_id = Column(ForeignKey("models.id"))
     result = Column(Integer(), nullable=False)
     probability = Column(Float(), nullable=False)
