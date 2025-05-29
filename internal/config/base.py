@@ -46,6 +46,7 @@ class AppSettings(BaseSettings):
     JWT_SECRET_KEY: str
 
     S3_URL: str
+    S3_URL_PUBLIC: str
     S3_ACCESS_KEY: str
     S3_SECRET_KEY: str
     S3_BUCKET_NAME_FILE: str = "data"

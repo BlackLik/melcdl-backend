@@ -161,7 +161,7 @@ class MLService:
                 created_on=file.created_on,
                 updated_on=file.updated_on,
                 original_name=CryptoService.decrypt(file.original_name),
-                url=get_config().S3_URL + "/" + file.s3_path,
+                url=get_config().S3_URL_PUBLIC + "/" + file.s3_path,
             )
             if file
             else None,
