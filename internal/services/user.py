@@ -11,12 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from internal import config
 from internal.entities import models, schemas
 from internal.repositories.user import UserRepository
+from internal.services.crypto import CryptoService
 from internal.services.utime import TimeService
 from internal.utils import errors, log
 from internal.utils.auth import HTTPBearerAuth, HTTPBearerAuthConfig
 from internal.utils.crypto import hash_string
 from internal.utils.errors import UnauthorizedError, UniqueError, ValidationError
-from tests.test_db import CryptoService
 
 logger = log.get_logger()
 
