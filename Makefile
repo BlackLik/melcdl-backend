@@ -43,6 +43,3 @@ migrate-create: clean
 .PHONY: migrate-upgrade
 migrate-upgrade: clean
 	${DOCKER} run app python -m cli.migrate upgrade head
-
-run:
-	docker-compose -f ./docker-compose.yaml up -d --build --force-recreate
