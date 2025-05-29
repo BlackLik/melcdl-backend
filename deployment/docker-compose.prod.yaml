@@ -71,8 +71,6 @@ services:
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
       - ALLOW_PLAINTEXT_LISTENER=yes
       - BITNAMI_DEBUG=yes
-    volumes:
-      - ../data/kafka_data:/bitnami/kafka
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -82,19 +80,6 @@ services:
       timeout: 5s
       retries: 10
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    environment:
-      - DYNAMIC_CONFIG_ENABLED=true
-    depends_on:
-      kafka:
-        condition: service_healthy
-
 volumes:
   postgresql_data:
-  kafka_data:
   minio_data:
