@@ -7,6 +7,9 @@ services:
       - "8000:8000"
     env_file:
       - ../config/.env.prod
+    volumes:
+      - ../data/ml:/app/data/ml
+      - ../log:/app/log
     runtime: nvidia
     restart: unless-stopped
 
