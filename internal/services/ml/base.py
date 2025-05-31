@@ -51,7 +51,7 @@ class MLService:
 
         file_id = uuid.uuid4()
 
-        file_name = f"{file_id!s}.{file.filename.split('.')[-1]}"
+        file_name = f"{settings.S3_DIR_NAME_FILE.strip('/')}/{file_id!s}.{file.filename.split('.')[-1]}"
 
         file_path = f"{settings.S3_CORE_BUCKET.rstrip('/')}/{file_name}"
 
