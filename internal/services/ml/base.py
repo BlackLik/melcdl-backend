@@ -54,9 +54,12 @@ class MLService:
 
         file_path = f"{settings.S3_CORE_BUCKET.rstrip('/')}/{settings.S3_DIR_NAME_FILE}/{file_name}"
 
-        file.file.seek(0)
         async with get_s3_session().client("s3", endpoint_url=settings.S3_URL) as s3:
-            await s3.upload_fileobj(file.file, settings.S3_CORE_BUCKET, settings.S3_DIR_NAME_FILE + "/" + file_name)
+            await s3.put_object(
+                Bucket=settings.S3_CORE_BUCKET,
+                Key=settings.S3_DIR_NAME_FILE + "/" + file_name,
+                Body=await file.read(),
+            )
 
         file = await file_repo.create(
             id=file_id,
