@@ -4,6 +4,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from fastapi import UploadFile, status
 from PIL import Image
@@ -50,15 +51,24 @@ class MLService:
 
         file_id = uuid.uuid4()
 
-        file_name = f"{file_id!s}.{file.filename.split('.')[-1]}"
+        file_name = f"{settings.S3_DIR_NAME_FILE}/{file_id!s}.{file.filename.split('.')[-1]}"
 
-        file_path = f"{settings.S3_CORE_BUCKET.rstrip('/')}/{settings.S3_DIR_NAME_FILE}/{file_name}"
+        file_path = f"{settings.S3_CORE_BUCKET.rstrip('/')}/{file_name}"
 
-        async with get_s3_session().client("s3", endpoint_url=settings.S3_URL) as s3:
+        content = await file.read()
+        if not content:
+            # Либо файл был пустым, либо вы уже ранее его читали, и второй раз content будет пустым  # noqa: RUF003
+            raise errors.BadRequestError(detail="Empty file body or already read")
+
+        async with get_s3_session().client(
+            "s3",
+            endpoint_url=settings.S3_URL,
+            config=Config(signature_version="s3v4"),
+        ) as s3:
             await s3.put_object(
                 Bucket=settings.S3_CORE_BUCKET,
-                Key=settings.S3_DIR_NAME_FILE + "/" + file_name,
-                Body=await file.read(),
+                Key=file_name,
+                Body=content,
             )
 
         file = await file_repo.create(
