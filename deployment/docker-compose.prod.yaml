@@ -12,6 +12,11 @@ services:
       - ../log:/app/log
     runtime: nvidia
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
 
   db:
     image: postgres:15-alpine
