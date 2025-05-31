@@ -4,7 +4,6 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from async_lru import alru_cache
 from botocore.exceptions import ClientError
 from fastapi import UploadFile, status
 from PIL import Image
@@ -20,29 +19,13 @@ from internal.repositories.ml import FilesRepository, ModelsRepository, Predicts
 from internal.services.crypto import CryptoService
 from internal.services.ml.model import PyTorchModel
 from internal.utils import errors, log
+from internal.utils.helper import async_log_error
 from internal.utils.resnet_abcd_swin import ResNetCosineSwinModel
 
 logger = log.get_logger()
 
 
 class MLService:
-    @staticmethod
-    @alru_cache(maxsize=2, ttl=get_config().CACHE_TTL)
-    async def check_bucket_exists(bucket_name: str) -> None:
-        session = get_s3_session()
-
-        async with session.client("s3", endpoint_url=get_config().S3_URL) as s3:
-            try:
-                await s3.head_bucket(Bucket=bucket_name)
-
-            except ClientError as e:
-                error_code = int(e.response["Error"]["Code"])
-                if error_code != status.HTTP_404_NOT_FOUND:
-                    logger.exception("Error client")
-                    raise
-
-                await s3.create_bucket(Bucket=bucket_name)
-
     @classmethod
     async def upload_img(
         cls,
@@ -57,8 +40,6 @@ class MLService:
 
         settings = get_config()
 
-        await cls.check_bucket_exists(settings.S3_BUCKET_NAME_FILE)
-
         model_repo = ModelsRepository(session=session)
 
         model = await model_repo.get(pk=model_pk)
@@ -71,10 +52,10 @@ class MLService:
 
         file_name = f"{file_id!s}.{file.filename.split('.')[-1]}"
 
-        file_path = f"{settings.S3_BUCKET_NAME_FILE}/{file_name}"
+        file_path = f"{settings.S3_CORE_BUCKET.rstrip('/')}/{settings.S3_DIR_NAME_FILE}/{file_name}"
 
         async with get_s3_session().client("s3", endpoint_url=settings.S3_URL) as s3:
-            await s3.upload_fileobj(file.file, settings.S3_BUCKET_NAME_FILE, file_name)
+            await s3.upload_fileobj(file.file, settings.S3_CORE_BUCKET, settings.S3_DIR_NAME_FILE + "/" + file_name)
 
         file = await file_repo.create(
             id=file_id,
@@ -197,8 +178,6 @@ class MLService:
         logger.info("Start upload model default to bucket")
         settings = get_config()
 
-        await cls.check_bucket_exists(settings.S3_BUCKET_NAME_MODEL)
-
         dirs = settings.ML_DIR_TO_UPLOAD
 
         files = [f for f in dirs.iterdir() if f.is_file() and f.name.endswith((".pt", ".pth"))]
@@ -219,17 +198,23 @@ class MLService:
                 ]
                 default_name: dict[str, str] = default_name_list[0] if default_name_list else {}
 
+                target_file = f"{settings.S3_DIR_NAME_MODEL}/{file.name}"
+                s3_path = f"{settings.S3_CORE_BUCKET.rstrip('/')}/{target_file}"
+
                 params_to_create = {
                     "name": default_name.get("model_name", file.stem.replace("_", " ").title()),
-                    "s3_path": f"{settings.S3_BUCKET_NAME_MODEL}/{file.name}",
+                    "s3_path": s3_path,
                     "is_exists": True,
                 }
                 try:
-                    await s3.head_object(Bucket=settings.S3_BUCKET_NAME_MODEL, Key=file.name)
+                    await s3.head_object(
+                        Bucket=settings.S3_CORE_BUCKET,
+                        Key=target_file,
+                    )
                     logger.info("Model %s exists in bucket.", file.name)
 
                     await model_repo.get_or_create(
-                        filters={"s3_path": f"{settings.S3_BUCKET_NAME_MODEL}/{file.name}"},
+                        filters={"s3_path": s3_path},
                         params_to_create=params_to_create,
                     )
 
@@ -245,7 +230,7 @@ class MLService:
                 try:
                     logger.info("%s download to s3...", file.name)
                     with file.open("rb") as data:
-                        await s3.upload_fileobj(data, settings.S3_BUCKET_NAME_MODEL, file.name)
+                        await s3.upload_fileobj(data, settings.S3_CORE_BUCKET, target_file)
                 except ClientError:
                     logger.exception("Ошибка загрузки %s в S3", file.name)
                     raise
@@ -260,8 +245,6 @@ class MLService:
     async def check_model_file_exists(cls) -> None:
         logger.info("Start check model file exists in bucket")
         settings = get_config()
-
-        await cls.check_bucket_exists(settings.S3_BUCKET_NAME_MODEL)
 
         async_session_local = get_async_session()
 
@@ -278,12 +261,13 @@ class MLService:
             for index in range(0, count_model, settings.DEFAULT_BATCH_SIZE):
                 models = await model_repo.list(offset=index, limit=batch_size)
                 for model in models:
-                    bucket, key = model.s3_path.rsplit("/", 1)
+                    bucket, key = model.s3_path.split("/", 1)
                     try:
                         await s3.head_object(Bucket=bucket, Key=key)
                         local_file = dir_ml / key
 
                         if not local_file.exists():
+                            local_file.parent.mkdir(parents=True, exist_ok=True)
                             with local_file.open("wb") as f:
                                 await s3.download_fileobj(Bucket=bucket, Key=key, Fileobj=f)
 
@@ -301,6 +285,7 @@ class MLService:
         logger.info("End check model file exists in bucket")
 
     @classmethod
+    @async_log_error
     async def start_all_jobs(cls) -> None:
         await cls.upload_model_default_to_bucket()
         await cls.check_model_file_exists()
@@ -325,7 +310,11 @@ class MLService:
 
         async with get_s3_session().client("s3", endpoint_url=get_config().S3_URL) as s3:
             with file.open("wb") as f:
-                await s3.download_fileobj(Bucket=settings.S3_BUCKET_NAME_MODEL, Key=name_file, Fileobj=f)
+                await s3.download_fileobj(
+                    Bucket=settings.S3_CORE_BUCKET,
+                    Key=f"{settings.S3_DIR_NAME_MODEL}/{name_file}",
+                    Fileobj=f,
+                )
 
         torch_model = PyTorchModel(model=ResNetCosineSwinModel())
         torch_model.load_model(file.absolute())
@@ -334,7 +323,7 @@ class MLService:
 
     @staticmethod
     async def get_file(s3_path: str) -> bytes:
-        bucket, key = s3_path.rsplit("/", 1)
+        bucket, key = s3_path.split("/", 1)
         async with get_s3_session().client("s3", endpoint_url=get_config().S3_URL) as s3:
             resp = await s3.get_object(Bucket=bucket, Key=key)
             body = resp["Body"]

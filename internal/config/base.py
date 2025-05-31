@@ -49,8 +49,9 @@ class AppSettings(BaseSettings):
     S3_URL_PUBLIC: str
     S3_ACCESS_KEY: str
     S3_SECRET_KEY: str
-    S3_BUCKET_NAME_FILE: str = "data"
-    S3_BUCKET_NAME_MODEL: str = "model"
+    S3_CORE_BUCKET: str = ""
+    S3_DIR_NAME_FILE: str = "file"
+    S3_DIR_NAME_MODEL: str = "model"
 
     # kafka
     KAFKA_BOOTSTRAP_SERVERS: str

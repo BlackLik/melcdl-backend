@@ -13,7 +13,7 @@ class StatusEnum(base.BaseEnum):
 
 
 class PredictEnum(int, Enum):
-    BENIGN = auto()
+    BENIGN = 0
     MALIGNANT = auto()
     ANOTHER = auto()
 
