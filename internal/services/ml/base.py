@@ -67,8 +67,8 @@ class MLService:
         ) as s3:
             await s3.put_object(
                 Bucket=settings.S3_CORE_BUCKET,
-                Key=file_name,
-                Body=content,
+                Key=file_name.strip("/"),
+                Body=io.BytesIO(content),
             )
 
         file = await file_repo.create(
