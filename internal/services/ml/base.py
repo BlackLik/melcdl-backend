@@ -51,7 +51,7 @@ class MLService:
 
         file_id = uuid.uuid4()
 
-        file_name = f"{settings.S3_DIR_NAME_FILE}/{file_id!s}.{file.filename.split('.')[-1]}"
+        file_name = f"{file_id!s}.{file.filename.split('.')[-1]}"
 
         file_path = f"{settings.S3_CORE_BUCKET.rstrip('/')}/{file_name}"
 
@@ -69,16 +69,12 @@ class MLService:
             file_name.strip("/"),
         )
 
-        body_stream = io.BytesIO(content)
-        body_stream.seek(0)
-
         async with get_s3_session().client(
             "s3",
             endpoint_url=settings.S3_URL,
             config=Config(
                 signature_version="s3v4",
                 s3={
-                    "payload_signing_enabled": False,
                     "addressing_style": "path",
                 },
             ),
@@ -86,9 +82,7 @@ class MLService:
             await s3.put_object(
                 Bucket=settings.S3_CORE_BUCKET,
                 Key=file_name.strip("/"),
-                Body=body_stream,
-                ContentLength=len(content),
-                ContentType=file.content_type,
+                Body=content,
             )
 
         file = await file_repo.create(
@@ -241,7 +235,7 @@ class MLService:
                     "is_exists": True,
                 }
                 try:
-                    await s3.head_object(
+                    await s3.get_object(
                         Bucket=settings.S3_CORE_BUCKET,
                         Key=target_file,
                     )
@@ -256,10 +250,12 @@ class MLService:
 
                     continue
                 except ClientError as e:
-                    code = int(e.response["Error"]["Code"])
+                    code = int(e.response.get("Error", {}).get("Code", 500))
                     if code != status.HTTP_404_NOT_FOUND:
                         logger.exception("Error %s in S3", file.name)
                         raise
+                except Exception:
+                    logger.exception("Error")
 
                 try:
                     logger.info("%s download to s3...", file.name)
@@ -297,7 +293,7 @@ class MLService:
                 for model in models:
                     bucket, key = model.s3_path.split("/", 1)
                     try:
-                        await s3.head_object(Bucket=bucket, Key=key)
+                        await s3.get_object(Bucket=bucket, Key=key)
                         local_file = dir_ml / key
 
                         if not local_file.exists():
@@ -308,10 +304,8 @@ class MLService:
                         logger.info("Downloaded %s to %s", key, local_file.absolute())
 
                         await model_repo.update(model, {"is_exists": True})
-                    except ClientError as e:
-                        code = int(e.response["Error"]["Code"])
-                        if code != status.HTTP_404_NOT_FOUND:
-                            raise
+                    except Exception:
+                        logger.exception("Error")
                         await model_repo.update(model, {"is_exists": False})
 
                     await db_session.commit()
@@ -330,7 +324,7 @@ class MLService:
         return [
             schemas.ml.ModelSchema(id=elem.id, name=elem.name)
             for index in range(0, await model_repo.count(), get_config().DEFAULT_BATCH_SIZE)
-            for elem in await model_repo.list(offset=index, limit=get_config().DEFAULT_BATCH_SIZE)
+            for elem in await model_repo.list(offset=index, limit=get_config().DEFAULT_BATCH_SIZE, is_exists=True)
         ]
 
     @classmethod
