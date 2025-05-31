@@ -60,6 +60,14 @@ class MLService:
             # Либо файл был пустым, либо вы уже ранее его читали, и второй раз content будет пустым  # noqa: RUF003
             raise errors.BadRequestError(detail="Empty file body or already read")
 
+        logger.info(
+            "Content length: %s, Content type: %s push to bucket %s, key %s",
+            len(content),
+            file.content_type,
+            settings.S3_CORE_BUCKET,
+            file_name.strip("/"),
+        )
+
         async with get_s3_session().client(
             "s3",
             endpoint_url=settings.S3_URL,
@@ -68,7 +76,8 @@ class MLService:
             await s3.put_object(
                 Bucket=settings.S3_CORE_BUCKET,
                 Key=file_name.strip("/"),
-                Body=io.BytesIO(content),
+                Body=content,
+                ContentLength=len(content),
             )
 
         file = await file_repo.create(
