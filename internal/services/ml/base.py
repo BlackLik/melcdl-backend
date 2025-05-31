@@ -69,6 +69,9 @@ class MLService:
             file_name.strip("/"),
         )
 
+        body_stream = io.BytesIO(content)
+        body_stream.seek(0)
+
         async with get_s3_session().client(
             "s3",
             endpoint_url=settings.S3_URL,
@@ -76,13 +79,14 @@ class MLService:
                 signature_version="s3v4",
                 s3={
                     "payload_signing_enabled": False,
+                    "addressing_style": "path",
                 },
             ),
         ) as s3:
             await s3.put_object(
                 Bucket=settings.S3_CORE_BUCKET,
                 Key=file_name.strip("/"),
-                Body=content,
+                Body=body_stream,
                 ContentLength=len(content),
                 ContentType=file.content_type,
             )
