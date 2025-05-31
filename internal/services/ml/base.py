@@ -55,6 +55,7 @@ class MLService:
 
         file_path = f"{settings.S3_CORE_BUCKET.rstrip('/')}/{file_name}"
 
+        await file.seek(0)
         content = await file.read()
         if not content:
             # Либо файл был пустым, либо вы уже ранее его читали, и второй раз content будет пустым  # noqa: RUF003
@@ -71,13 +72,19 @@ class MLService:
         async with get_s3_session().client(
             "s3",
             endpoint_url=settings.S3_URL,
-            config=Config(signature_version="s3v4"),
+            config=Config(
+                signature_version="s3v4",
+                s3={
+                    "payload_signing_enabled": False,
+                },
+            ),
         ) as s3:
             await s3.put_object(
                 Bucket=settings.S3_CORE_BUCKET,
                 Key=file_name.strip("/"),
                 Body=content,
                 ContentLength=len(content),
+                ContentType=file.content_type,
             )
 
         file = await file_repo.create(
