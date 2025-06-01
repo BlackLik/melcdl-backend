@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Self
 
 import uvicorn
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 from internal import api, config
 from internal.bootstrap.abc import AbstractCommand
@@ -55,6 +56,14 @@ class AppCommand(AbstractCommand):
             lifespan=self._lifespan,
             exception_handlers=self._exception_handlers(),
         )
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
         app.include_router(api.router)
 
         self.consumer = get_kafka_consumer()
